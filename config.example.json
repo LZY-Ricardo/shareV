@@ -1,0 +1,12 @@
+{
+  "xui": {
+    "baseUrl": "https://host.docker.internal:2053",
+    "username": "your-admin-username",
+    "password": "your-admin-password"
+  },
+  "port": 3000,
+  "users": {
+    "paste-uuid-here": { "name": "张三", "email": "vps3-张三" },
+    "paste-uuid-here": { "name": "李四", "email": "vps3-李四" }
+  }
+}

@@ -1,0 +1,10 @@
+services:
+  sharev:
+    build: .
+    container_name: sharev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./config.json:/app/config.json:ro
