@@ -476,6 +476,58 @@ canvas#chart { width: 100%; height: 100%; }
 
 .footer-sep { color: var(--border-glow); }
 
+/* ── Device List ── */
+.device-list {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  animation: cardIn 0.3s ease-out both;
+}
+
+.device-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.device-item:last-child { border-bottom: none; }
+
+.device-item:hover { background: rgba(0, 240, 255, 0.03); }
+
+.device-ip {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--cyan);
+}
+
+.device-time {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.expand-arrow {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--cyan);
+  margin-left: 4px;
+  transition: transform 0.2s;
+}
+
+.node-bar .device-count {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.node-bar .device-count:hover { color: var(--text); }
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
   .container { padding: 16px 12px; }

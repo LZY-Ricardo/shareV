@@ -114,26 +114,46 @@ async function getUserStats(email) {
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
   const daily = db.getDailyTraffic(email, 7);
 
-  let deviceCount = 0;
+  // Check online status + device details
+  let online = false;
+  let deviceList = [];
   try {
-    const ipData = await xui.getClientIps(email);
-    if (ipData && ipData.ips && typeof ipData.ips === 'object' && !Array.isArray(ipData.ips)) {
-      const thirtyMinAgo = now - 30 * 60;
-      deviceCount = Object.entries(ipData.ips)
-        .filter(([, ts]) => ts >= thirtyMinAgo)
-        .length;
+    const onlineClients = await xui.getOnlineClients();
+    online = onlineClients.includes(email);
+  } catch (err) {
+    console.warn('[tracker] Failed to fetch online status:', err.message);
+  }
+  try {
+    let ipData = await xui.getClientIps(email);
+    // API may return a JSON string instead of parsed object
+    if (typeof ipData === 'string') {
+      try { ipData = JSON.parse(ipData); } catch { ipData = null; }
+    }
+    if (ipData && Array.isArray(ipData)) {
+      for (const ip of ipData) {
+        deviceList.push({ ip, lastSeen: null });
+      }
+    } else if (ipData && typeof ipData === 'object' && !Array.isArray(ipData)) {
+      const now = Date.now();
+      for (const [ip, ts] of Object.entries(ipData)) {
+        const lastSeen = typeof ts === 'number' ? ts : null;
+        if (lastSeen && (now - lastSeen) < 30 * 60 * 1000) {
+          deviceList.push({ ip, lastSeen });
+        }
+      }
     }
   } catch (err) {
-    console.warn('[tracker] Failed to fetch device count:', err.message);
-    deviceCount = 0;
+    // ignore
   }
 
   return {
     today: todayTraffic,
     month: { up: monthUp, down: monthDown },
     total: { up: totalUp, down: totalDown },
+    online,
+    devices: deviceList.length,
+    deviceList,
     daily,
-    devices: deviceCount,
     node: nodeInfo,
   };
 }

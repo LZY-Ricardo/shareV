@@ -50,6 +50,11 @@ function getLatestSnapshot(email) {
   ).get(email);
 }
 
+// Format Date to YYYY-MM-DD using local timezone
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // Get daily traffic for the last N days (returns array of { date, up, down })
 function getDailyTraffic(email, days = 7) {
   const now = new Date();
@@ -73,7 +78,7 @@ function getDailyTraffic(email, days = 7) {
     const down = (atDayEnd?.allDown || 0) - (beforeDay?.allDown || 0);
 
     results.push({
-      date: dayStart.toISOString().slice(0, 10),
+      date: localDateStr(dayStart),
       up: Math.max(0, up),
       down: Math.max(0, down),
     });

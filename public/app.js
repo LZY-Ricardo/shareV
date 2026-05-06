@@ -89,7 +89,9 @@
       `LAST_SYNC ${ts} <a href="#" class="back-link" onclick="handleLogout()">[切换]</a>`;
 
     const node = data.node || {};
+    const online = data.online || false;
     const devices = data.devices || 0;
+    const deviceList = data.deviceList || [];
 
     let html = '';
 
@@ -99,11 +101,28 @@
       html += `<span class="tag">${esc(node.protocol || 'vless')}</span>`;
       html += `<span class="node-name">${esc(node.remark)}</span>`;
     }
-    html += `<span class="device-count">`;
-    html += `<span class="dot ${devices > 0 ? 'online' : 'offline'}"></span>`;
-    html += `${devices} DEVICE${devices !== 1 ? 'S' : ''}`;
+    html += `<span class="device-count" onclick="toggleDevices()">`;
+    html += `<span class="dot ${online ? 'online' : 'offline'}"></span>`;
+    if (online && devices > 0) {
+      html += `${devices} DEVICE${devices !== 1 ? 'S' : ''} <span class="expand-arrow" id="deviceArrow">▶</span>`;
+    } else {
+      html += `${online ? 'ONLINE' : 'OFFLINE'}`;
+    }
     html += `</span>`;
     html += '</div>';
+
+    // Device detail list (hidden by default)
+    if (deviceList.length > 0) {
+      html += '<div class="device-list" id="deviceList" style="display:none">';
+      for (const dev of deviceList) {
+        const lastSeen = dev.lastSeen ? new Date(dev.lastSeen).toLocaleString('zh-CN') : '—';
+        html += `<div class="device-item">`;
+        html += `<span class="device-ip">${esc(dev.ip)}</span>`;
+        html += `<span class="device-time">${lastSeen}</span>`;
+        html += `</div>`;
+      }
+      html += '</div>';
+    }
 
     // Traffic cards
     const today = sumTraffic(data.today.up, data.today.down);
@@ -230,6 +249,19 @@
       ctx.fillText(d.date.slice(5), x + barWidth / 2, H - 6);
     });
   }
+
+  window.toggleDevices = function () {
+    const list = document.getElementById('deviceList');
+    const arrow = document.getElementById('deviceArrow');
+    if (!list) return;
+    if (list.style.display === 'none') {
+      list.style.display = 'block';
+      if (arrow) arrow.textContent = '▼';
+    } else {
+      list.style.display = 'none';
+      if (arrow) arrow.textContent = '▶';
+    }
+  };
 
   window.handleLogout = function () {
     currentName = '';
