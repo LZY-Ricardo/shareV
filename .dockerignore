@@ -1,4 +1,12 @@
-node_modules
-data
-.git
+node_modules/
+data/
 config.json
+.git/
+.claude/
+*.log
+.DS_Store
+Thumbs.db
+deploy/
+__tests__/
+output/
+.env

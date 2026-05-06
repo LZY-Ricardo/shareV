@@ -4,7 +4,11 @@ services:
     container_name: sharev
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       - ./data:/app/data
       - ./config.json:/app/config.json:ro
+    environment:
+      - TZ=Asia/Shanghai
+    env_file:
+      - .env
