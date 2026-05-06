@@ -57,6 +57,7 @@
   }
 
   async function loadStats() {
+    showLoadingBar(true);
     try {
       const res = await fetch(`/api/stats?name=${encodeURIComponent(currentName)}`);
       if (!res.ok) {
@@ -67,6 +68,23 @@
       render(data);
     } catch (err) {
       showError(err.message);
+    } finally {
+      showLoadingBar(false);
+    }
+  }
+
+  function showLoadingBar(show) {
+    let bar = document.getElementById('loadingBar');
+    if (show) {
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'loadingBar';
+        bar.className = 'top-loading-bar';
+        document.body.prepend(bar);
+      }
+      bar.classList.add('active');
+    } else if (bar) {
+      bar.classList.remove('active');
     }
   }
 
@@ -180,6 +198,11 @@
     html += '</div>';
 
     document.getElementById('content').innerHTML = html;
+    // Fade in
+    const content = document.getElementById('content');
+    content.classList.remove('fade-in');
+    void content.offsetWidth; // trigger reflow
+    content.classList.add('fade-in');
 
     if (daily.length > 0) {
       drawChart(last7);
@@ -349,8 +372,9 @@
   };
 
   function showError(msg) {
+    showLoadingBar(false);
     document.getElementById('content').innerHTML =
-      `<div class="error-msg">ERR:: ${esc(msg)}</div>`;
+      `<div class="error-msg"><div>ERR:: ${esc(msg)}</div><button class="retry-btn" onclick="loadStats()">重试</button></div>`;
   }
 
   function esc(s) {

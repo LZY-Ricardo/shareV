@@ -1,0 +1,9 @@
+{
+  "name": "shareV 流量监控",
+  "short_name": "shareV",
+  "description": "3X-UI 流量监控看板",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06080e",
+  "theme_color": "#06080e"
+}
