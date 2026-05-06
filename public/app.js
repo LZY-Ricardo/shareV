@@ -229,9 +229,24 @@
       html += '</div>';
       html += '<div class="config-body" id="configBody" style="display:none">';
       html += `<input type="text" class="config-link" id="configInput" value="${esc(data.configLink)}" readonly onclick="this.select()" />`;
+      html += '<div class="config-actions">';
       html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
+      html += '<button class="config-import-btn" onclick="importToV2RayN()">导入 v2rayN</button>';
+      html += '<button class="config-help-btn" onclick="toggleImportGuide()">注册协议教程</button>';
+      html += '</div>';
+      html += '<div class="config-guide" id="configGuide" style="display:none">';
+      html += '<div class="guide-title">v2rayN 导入与协议注册</div>';
+      html += '<div class="guide-step">1. 先点“导入 v2rayN”。如果客户端已注册 `v2rayn://` 协议，会自动弹起导入。</div>';
+      html += '<div class="guide-step">2. 如果没有自动打开，说明本机还没注册协议。你仍然可以先点“复制链接”，回到 v2rayN 里粘贴导入。</div>';
+      html += '<div class="guide-step">3. 想启用一键导入时，在 Windows PowerShell 里执行下面这段命令。先把第一行的 v2rayN 路径改成你自己的。</div>';
+      html += '<textarea class="guide-code" readonly onclick="this.select()" id="guideCode">$exe = "C:\\Path\\To\\v2rayN\\v2rayN.exe"\n\nNew-Item -Path "HKCU:\\Software\\Classes\\v2rayn" -Force | Out-Null\nSet-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn" -Name "(default)" -Value "URL:v2rayN Protocol"\nNew-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn" -Name "URL Protocol" -Value "" -PropertyType String -Force | Out-Null\n\nNew-Item -Path "HKCU:\\Software\\Classes\\v2rayn\\DefaultIcon" -Force | Out-Null\nSet-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn\\DefaultIcon" -Name "(default)" -Value "\\`"$exe\\`",0"\n\nNew-Item -Path "HKCU:\\Software\\Classes\\v2rayn\\shell\\open\\command" -Force | Out-Null\nSet-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn\\shell\\open\\command" -Name "(default)" -Value "\\`"$exe\\`" \\`"%1\\`""</textarea>';
+      html += '<div class="guide-actions">';
+      html += '<button class="guide-copy-btn" onclick="copyGuideCode()">复制教程命令</button>';
+      html += '</div>';
+      html += '<div class="guide-note">执行后重启 v2rayN，再回来点“导入 v2rayN”即可。</div>';
+      html += '</div>';
       html += '<div class="qr-container" id="qrContainer"></div>';
-      html += '<div class="config-hint">复制链接后在代理客户端中导入，或扫描二维码</div>';
+      html += '<div class="config-hint">可直接导入 v2rayN；如果未自动打开，也可以复制链接或扫描二维码导入</div>';
       html += '</div>';
       html += '</div>';
     }
@@ -459,6 +474,63 @@
       const btn = document.querySelector('.config-copy-btn');
       if (btn) { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制链接', 1500); }
     }).catch(() => {});
+  };
+
+  window.importToV2RayN = async function () {
+    const input = document.getElementById('configInput');
+    if (!input || !input.value) return;
+
+    const link = input.value;
+    const btn = document.querySelector('.config-import-btn');
+
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch (_) {}
+
+    if (btn) {
+      btn.textContent = '正在打开...';
+      btn.disabled = true;
+    }
+
+    try {
+      // Best-effort deep link for desktop clients. If the protocol is not
+      // registered, users can still paste from clipboard in v2rayN.
+      const schemeUrl = `v2rayn://install-config?url=${encodeURIComponent(link)}`;
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = schemeUrl;
+      document.body.appendChild(iframe);
+      setTimeout(() => iframe.remove(), 1500);
+    } catch (_) {}
+
+    setTimeout(() => {
+      if (btn) {
+        btn.textContent = '导入 v2rayN';
+        btn.disabled = false;
+      }
+    }, 1800);
+  };
+
+  window.toggleImportGuide = function () {
+    const guide = document.getElementById('configGuide');
+    const btn = document.querySelector('.config-help-btn');
+    if (!guide) return;
+    const opening = guide.style.display === 'none';
+    guide.style.display = opening ? 'block' : 'none';
+    if (btn) btn.textContent = opening ? '收起教程' : '注册协议教程';
+  };
+
+  window.copyGuideCode = async function () {
+    const code = document.getElementById('guideCode');
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code.value);
+      const btn = document.querySelector('.guide-copy-btn');
+      if (btn) {
+        btn.textContent = '已复制 ✓';
+        setTimeout(() => btn.textContent = '复制教程命令', 1500);
+      }
+    } catch (_) {}
   };
 
   window.toggleDevices = function () {
