@@ -2,6 +2,7 @@ const http = require('http');
 const https = require('https');
 
 let sessionCookie = null;
+let loginPromise = null;
 let config = null;
 
 function init(cfg) {
@@ -75,13 +76,15 @@ async function login() {
 
 async function ensureLogin() {
   if (!sessionCookie) {
-    await login();
+    if (!loginPromise) loginPromise = login().finally(() => { loginPromise = null; });
+    await loginPromise;
     return;
   }
   const result = await request('GET', 'panel/api/inbounds/list');
   if (!result || !result.success) {
     sessionCookie = null;
-    await login();
+    if (!loginPromise) loginPromise = login().finally(() => { loginPromise = null; });
+    await loginPromise;
   }
 }
 

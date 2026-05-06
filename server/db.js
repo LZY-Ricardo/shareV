@@ -64,6 +64,59 @@ function createDB(dbPath) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  function snapshotTotal(row) {
+    if (!row) return 0;
+    const allTotal = (row.allUp || 0) + (row.allDown || 0);
+    return allTotal > 0 ? allTotal : (row.up || 0) + (row.down || 0);
+  }
+
+  function trafficDelta(from, to) {
+    if (!from || !to || from.timestamp >= to.timestamp) return { up: 0, down: 0 };
+
+    const rawUp = (to.up || 0) - (from.up || 0);
+    const rawDown = (to.down || 0) - (from.down || 0);
+    const rawTotal = rawUp + rawDown;
+    const rawReset = rawUp < 0 || rawDown < 0;
+    const currentUp = to.up || 0;
+    const currentDown = to.down || 0;
+    const currentTotal = currentUp + currentDown;
+    const fromTotal = snapshotTotal(from);
+    const toTotal = snapshotTotal(to);
+    const totalDelta = Math.max(0, toTotal - fromTotal);
+
+    if (rawReset && toTotal < fromTotal) {
+      return { up: currentUp, down: currentDown };
+    }
+
+    if (totalDelta === 0) return { up: 0, down: 0 };
+
+    function splitByRatio(upBase, downBase) {
+      const ratioTotal = upBase + downBase;
+      if (ratioTotal <= 0) return { up: 0, down: totalDelta };
+      const up = Math.round(totalDelta * (upBase / ratioTotal));
+      return { up, down: totalDelta - up };
+    }
+
+    if (rawReset && currentTotal > 0) {
+      return splitByRatio(currentUp, currentDown);
+    }
+
+    const tolerance = Math.max(1, totalDelta * 0.01);
+    if (rawUp >= 0 && rawDown >= 0 && rawTotal > 0 && Math.abs(rawTotal - totalDelta) <= tolerance) {
+      return { up: rawUp, down: rawDown };
+    }
+
+    const allUp = Math.max(0, (to.allUp || 0) - (from.allUp || 0));
+    const allDown = Math.max(0, (to.allDown || 0) - (from.allDown || 0));
+    const allTotal = allUp + allDown;
+    if (allTotal === 0) return { up: 0, down: totalDelta };
+    if (Math.abs(allTotal - totalDelta) <= tolerance) {
+      return { up: allUp, down: allDown };
+    }
+
+    return splitByRatio(allUp, allDown);
+  }
+
   // Get daily traffic for the last N days (returns array of { date, up, down })
   function getDailyTraffic(email, days = 7) {
     const now = new Date();
@@ -80,16 +133,15 @@ function createDB(dbPath) {
       const startTs = Math.floor(dayStart.getTime() / 1000);
       const endTs = Math.floor(dayEnd.getTime() / 1000);
 
-      const beforeDay = getSnapshotAtOrBefore(email, startTs);
+      const beforeDay = getSnapshotAtOrBefore(email, startTs) || getSnapshotAtOrAfter(email, startTs);
       const atDayEnd = getSnapshotAtOrBefore(email, endTs);
 
-      const up = (atDayEnd?.allUp || 0) - (beforeDay?.allUp || 0);
-      const down = (atDayEnd?.allDown || 0) - (beforeDay?.allDown || 0);
+      const { up, down } = trafficDelta(beforeDay, atDayEnd);
 
       results.push({
         date: localDateStr(dayStart),
-        up: Math.max(0, up),
-        down: Math.max(0, down),
+        up,
+        down,
       });
     }
 
@@ -106,18 +158,12 @@ function createDB(dbPath) {
       // No baseline before period start — use earliest snapshot after start as fallback
       const earliest = getSnapshotAtOrAfter(email, startTimestamp);
       if (earliest && earliest.timestamp < latest.timestamp) {
-        return {
-          up: Math.max(0, (latest.allUp || latest.up) - (earliest.allUp || earliest.up)),
-          down: Math.max(0, (latest.allDown || latest.down) - (earliest.allDown || earliest.down)),
-        };
+        return trafficDelta(earliest, latest);
       }
       return { up: 0, down: 0 };
     }
 
-    return {
-      up: Math.max(0, (latest.allUp || latest.up) - (before.allUp || before.up)),
-      down: Math.max(0, (latest.allDown || latest.down) - (before.allDown || before.down)),
-    };
+    return trafficDelta(before, latest);
   }
 
   // Get today's start timestamp (local timezone midnight)
@@ -125,6 +171,11 @@ function createDB(dbPath) {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     return Math.floor(now.getTime() / 1000);
+  }
+
+  function hasSnapshotsSince(timestamp) {
+    const row = db.prepare('SELECT 1 FROM traffic_snapshots WHERE timestamp >= ? LIMIT 1').get(timestamp);
+    return Boolean(row);
   }
 
   // Get this month's start timestamp (1st day of month, midnight)
@@ -151,7 +202,6 @@ function createDB(dbPath) {
   }
 
   return {
-    db,
     insertSnapshot,
     insertSnapshots,
     getSnapshotAtOrBefore,
@@ -159,9 +209,16 @@ function createDB(dbPath) {
     getDailyTraffic,
     getPeriodTraffic,
     getTodayStart,
+    hasSnapshotsSince,
     getMonthStart,
     getLastMonthStart,
     cleanup,
+    backup(destPath) {
+      return db.backup(destPath);
+    },
+    close() {
+      db.close();
+    },
   };
 }
 

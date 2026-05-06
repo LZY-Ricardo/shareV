@@ -1,9 +1,12 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
+const cron = require('node-cron');
 const xui = require('./xui-api');
 const tracker = require('./traffic-tracker');
+const db = require('./db');
+const { createUserDirectory } = require('./user-directory');
+const { resolvePublicUrl } = require('./public-url');
 
 // Load config
 const configPath = path.join(__dirname, '..', 'config.json');
@@ -84,24 +87,26 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// Build name-to-user lookup
-const usersByName = {};
-for (const [uuid, user] of Object.entries(config.users)) {
-  usersByName[user.name.toLowerCase()] = { ...user, uuid };
+const userDirectory = createUserDirectory(config.users);
+
+function getBaseUrl(req) {
+  return resolvePublicUrl(config, req);
 }
 
-// ── API: Get stats by username ──
-app.get('/api/stats', rateLimiter, async (req, res) => {
-  const name = (req.query.name || '').trim();
-  if (!name) {
-    return res.status(400).json({ error: '请输入用户名' });
-  }
-
-  const user = usersByName[name.toLowerCase()];
+function getUserByToken(req, res) {
+  const token = (req.query.token || '').trim();
+  const user = userDirectory.findByToken(token);
   if (!user) {
-    // Generic error to prevent user enumeration
-    return res.status(404).json({ error: '未找到数据' });
+    res.status(404).json({ error: '未找到数据' });
+    return null;
   }
+  return user;
+}
+
+// ── API: Get stats by user access token ──
+app.get('/api/stats', rateLimiter, async (req, res) => {
+  const user = getUserByToken(req, res);
+  if (!user) return;
 
   try {
     const stats = await tracker.getUserStats(user.email);
@@ -115,8 +120,40 @@ app.get('/api/stats', rateLimiter, async (req, res) => {
   }
 });
 
+app.get('/api/admin/users', rateLimiter, requireAdmin, async (req, res) => {
+  try {
+    const users = userDirectory.listUsers(getBaseUrl(req));
+    // Fetch online status for each user
+    const onlineClients = await xui.getOnlineClients().catch(() => []);
+    for (const user of users) {
+      user.online = onlineClients.includes(user.email);
+    }
+    res.json({ users });
+  } catch (err) {
+    res.json({ users: userDirectory.listUsers(getBaseUrl(req)) });
+  }
+});
+
+app.get('/api/admin/stats', rateLimiter, requireAdmin, async (req, res) => {
+  const user = getUserByToken(req, res);
+  if (!user) return;
+
+  try {
+    const stats = await tracker.getUserStats(user.email);
+    res.json({
+      name: user.name,
+      token: user.token,
+      url: `${getBaseUrl(req)}/#t=${encodeURIComponent(user.token)}`,
+      ...stats,
+    });
+  } catch (err) {
+    console.error('[shareV] Admin stats error:', err.message);
+    res.status(500).json({ error: '服务暂时不可用' });
+  }
+});
+
 // ── Admin-only: manual snapshot trigger ──
-app.post('/api/snapshot', requireAdmin, async (req, res) => {
+app.post('/api/admin/snapshot', rateLimiter, requireAdmin, async (req, res) => {
   try {
     await tracker.snapshot();
     res.json({ success: true });
@@ -126,8 +163,41 @@ app.post('/api/snapshot', requireAdmin, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`[shareV] Dashboard running on http://0.0.0.0:${PORT}`);
-  // Take initial snapshot on startup
-  setTimeout(() => tracker.snapshot(), 3000);
+// ── Health check ──
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', uptime: Math.floor(process.uptime()) });
 });
+
+// ── Daily DB backup at 4am ──
+const backupPath = path.join(dataDir, 'traffic.db.bak');
+cron.schedule('0 4 * * *', async () => {
+  try {
+    await db.backup(backupPath);
+    console.log('[shareV] DB backup completed');
+  } catch (err) {
+    console.error('[shareV] DB backup failed:', err.message);
+  }
+});
+
+const server = app.listen(PORT, () => {
+  console.log(`[shareV] Dashboard running on http://0.0.0.0:${PORT}`);
+});
+
+// Graceful shutdown
+function shutdown(signal) {
+  console.log(`[shareV] Received ${signal}, shutting down gracefully...`);
+  server.close(() => {
+    console.log('[shareV] HTTP server closed');
+    try { db.close(); } catch (_) {}
+    console.log('[shareV] Goodbye');
+    process.exit(0);
+  });
+  // Force exit after 10s if connections don't close
+  setTimeout(() => {
+    console.warn('[shareV] Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

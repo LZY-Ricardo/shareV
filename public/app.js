@@ -1,18 +1,23 @@
 (function () {
   let refreshTimer = null;
-  let currentName = '';
+  let currentToken = '';
 
-  const savedName = localStorage.getItem('sharev_name');
-  if (location.hash) {
-    currentName = decodeURIComponent(location.hash.slice(1));
-  } else if (savedName) {
-    currentName = savedName;
-  }
+  const savedToken = localStorage.getItem('sharev_token');
+  currentToken = readTokenFromHash() || savedToken || '';
 
-  if (currentName) {
+  if (currentToken) {
     showDashboard();
   } else {
     showLogin();
+  }
+
+  function readTokenFromHash() {
+    if (!location.hash) return '';
+    const raw = decodeURIComponent(location.hash.slice(1));
+    if (raw.startsWith('t=')) {
+      return new URLSearchParams(raw).get('t') || '';
+    }
+    return raw;
   }
 
   function showLogin() {
@@ -28,13 +33,13 @@
             <circle cx="12" cy="10" r="2"/>
           </svg>
         </div>
-        <div class="login-title">输入用户名以查看流量数据</div>
+        <div class="login-title">输入访问码以查看流量数据</div>
         <div class="login-form">
-          <input type="text" id="nameInput" placeholder="用户名" autocomplete="off" spellcheck="false" />
+          <input type="text" id="tokenInput" placeholder="访问码" autocomplete="off" spellcheck="false" />
           <button id="loginBtn" onclick="handleLogin()">GO</button>
         </div>
       </div>`;
-    const input = document.getElementById('nameInput');
+    const input = document.getElementById('tokenInput');
     input.focus();
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') handleLogin();
@@ -42,11 +47,11 @@
   }
 
   window.handleLogin = function () {
-    const name = document.getElementById('nameInput').value.trim();
-    if (!name) return;
-    currentName = name;
-    localStorage.setItem('sharev_name', name);
-    location.hash = encodeURIComponent(name);
+    const token = document.getElementById('tokenInput').value.trim();
+    if (!token) return;
+    currentToken = token;
+    localStorage.setItem('sharev_token', token);
+    location.hash = `t=${encodeURIComponent(token)}`;
     showDashboard();
   };
 
@@ -59,7 +64,7 @@
   async function loadStats() {
     showLoadingBar(true);
     try {
-      const res = await fetch(`/api/stats?name=${encodeURIComponent(currentName)}`);
+      const res = await fetch(`/api/stats?token=${encodeURIComponent(currentToken)}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || '请求失败');
@@ -113,6 +118,18 @@
 
     let html = '';
 
+    // Expiry warning banner
+    if (node.expiryTime > 0) {
+      const daysLeft = Math.max(0, Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24)));
+      if (daysLeft === 0) {
+        html += '<div class="alert-banner expired">订阅已到期</div>';
+      } else if (daysLeft <= 3) {
+        html += `<div class="alert-banner urgent">订阅即将到期 · 剩余 ${daysLeft} 天</div>`;
+      } else if (daysLeft <= 7) {
+        html += `<div class="alert-banner warning">订阅将在 ${daysLeft} 天后到期</div>`;
+      }
+    }
+
     // Node info bar
     html += '<div class="node-bar">';
     if (node.remark) {
@@ -121,10 +138,16 @@
     }
     html += `<span class="device-count" onclick="toggleDevices()">`;
     html += `<span class="dot ${online ? 'online' : 'offline'}"></span>`;
+    const limitIp = node.limitIp || 0;
     if (online && devices > 0) {
-      html += `${devices} DEVICE${devices !== 1 ? 'S' : ''} <span class="expand-arrow" id="deviceArrow">▶</span>`;
+      const atLimit = limitIp > 0 && devices >= limitIp;
+      html += `<span class="${atLimit ? 'device-at-limit' : ''}">${devices} DEVICE${devices !== 1 ? 'S' : ''}</span>`;
+      html += ` <span class="expand-arrow" id="deviceArrow">▶</span>`;
     } else {
       html += `${online ? 'ONLINE' : 'OFFLINE'}`;
+    }
+    if (limitIp > 0) {
+      html += `<span class="device-limit-hint">上限 ${limitIp} 台</span>`;
     }
     html += `</span>`;
     html += '</div>';
@@ -186,9 +209,9 @@
     html += '<button class="toggle-btn" onclick="switchPeriod(30)">30天</button>';
     html += '</div>';
     html += '<div class="cards" id="trafficCards">';
-    html += card('TODAY', today, 'today', data.today.up, data.today.down);
-    html += card('近7天', sum7, 'period', sum7raw.up, sum7raw.down);
-    html += card('TOTAL', total, 'total', data.total.up, data.total.down);
+    html += card('账号今日', today, 'today', data.today.up, data.today.down);
+    html += card('账号近7天', sum7, 'period', sum7raw.up, sum7raw.down);
+    html += card('账号总量', total, 'total', data.total.up, data.total.down);
     html += '</div>';
 
     // Chart
@@ -196,6 +219,22 @@
     html += '<div class="title" id="chartTitle">7 DAY TREND</div>';
     html += '<div class="chart-container"><canvas id="chart"></canvas></div>';
     html += '</div>';
+
+    // Config link panel (bottom)
+    if (data.configLink) {
+      html += '<div class="config-section">';
+      html += '<div class="config-header" onclick="toggleConfig()">';
+      html += '<span class="config-title">连接配置</span>';
+      html += '<span class="expand-arrow" id="configArrow">▶</span>';
+      html += '</div>';
+      html += '<div class="config-body" id="configBody" style="display:none">';
+      html += `<input type="text" class="config-link" id="configInput" value="${esc(data.configLink)}" readonly onclick="this.select()" />`;
+      html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
+      html += '<div class="qr-container" id="qrContainer"></div>';
+      html += '<div class="config-hint">复制链接后在代理客户端中导入，或扫描二维码</div>';
+      html += '</div>';
+      html += '</div>';
+    }
 
     document.getElementById('content').innerHTML = html;
     // Fade in
@@ -206,6 +245,14 @@
 
     if (daily.length > 0) {
       drawChart(last7);
+    }
+
+    // Render QR code if config link exists
+    if (data.configLink) {
+      try {
+        const qrContainer = document.getElementById('qrContainer');
+        if (qrContainer) qrContainer.innerHTML = generateQR(data.configLink);
+      } catch (e) { /* QR generation failed, ignore */ }
     }
   }
 
@@ -222,14 +269,24 @@
 
   // Store last data for period switching
   let lastData = null;
+  let currentPeriodDays = 7;
+  let resizeTimer = null;
   const origRender = render;
   render = function(data) {
     lastData = data;
+    currentPeriodDays = 7;
     origRender(data);
   };
 
+  function getCurrentDaily() {
+    if (!lastData) return [];
+    const daily = lastData.daily || [];
+    return currentPeriodDays === 7 ? daily.slice(-7) : daily;
+  }
+
   window.switchPeriod = function (days) {
     if (!lastData) return;
+    currentPeriodDays = days;
     const daily = lastData.daily || [];
     const slice = days === 7 ? daily.slice(-7) : daily;
     const periodUp = slice.reduce((s, d) => s + d.up, 0);
@@ -240,7 +297,7 @@
     const periodCard = cards.querySelector('.period .label');
     const periodValue = cards.querySelector('.period .value');
     const periodDetail = cards.querySelector('.period .detail');
-    if (periodCard) periodCard.textContent = days === 7 ? '近7天' : '近30天';
+    if (periodCard) periodCard.textContent = days === 7 ? '账号近7天' : '账号近30天';
     if (periodValue) periodValue.innerHTML = `${periodF.value}<span class="unit">${periodF.unit}</span>`;
     const upF = formatBytes(periodUp);
     const downF = formatBytes(periodDown);
@@ -256,9 +313,20 @@
     document.querySelector(`.toggle-btn[onclick="switchPeriod(${days})"]`)?.classList.add('active');
   };
 
+  window.addEventListener('resize', () => {
+    if (!lastData) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      drawChart(getCurrentDaily());
+    }, 120);
+  });
+
+  // Chart bar positions for tooltip
+  let chartBars = [];
+
   function drawChart(daily) {
     const canvas = document.getElementById('chart');
-    if (!canvas) return;
+    if (!canvas || daily.length === 0) return;
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.parentElement.getBoundingClientRect();
@@ -295,60 +363,103 @@
       ctx.moveTo(padLeft, y);
       ctx.lineTo(W - padRight, y);
       ctx.stroke();
-      const val = maxVal * (1 - i / 3);
-      const fb = formatBytes(val);
-      ctx.fillText(fb.value + fb.unit, padLeft - 8, y + 4);
+      const labelVal = maxVal - (maxVal / 3) * i;
+      ctx.fillText(formatBytes(labelVal).value + formatBytes(labelVal).unit, padLeft - 6, y + 3);
     }
 
     // Bars
-    const barCount = daily.length;
+    const barCount = values.length;
     const barGap = barCount > 15 ? 2 : 8;
-    const barWidth = (chartW - barGap * (barCount + 1)) / barCount;
-    const labelStep = barCount > 15 ? Math.ceil(barCount / 7) : 1;
+    const barW = Math.max(4, (chartW - barGap * (barCount - 1)) / barCount);
+    const barColors = ['#00f0ff', '#00c8ff', '#0096ff'];
+    chartBars = [];
 
-    daily.forEach((d, i) => {
-      const val = d.up + d.down;
-      const barH = (val / maxVal) * chartH;
-      const x = padLeft + barGap + i * (barWidth + barGap);
+    values.forEach((v, i) => {
+      const barH = Math.max(2, (v / maxVal) * chartH);
+      const x = padLeft + i * (barW + barGap);
       const y = padTop + chartH - barH;
+      const color = barColors[i % barColors.length];
 
-      // Bar gradient
-      const grad = ctx.createLinearGradient(x, y, x, padTop + chartH);
-      grad.addColorStop(0, 'rgba(0, 240, 255, 0.9)');
-      grad.addColorStop(0.5, 'rgba(14, 165, 160, 0.6)');
-      grad.addColorStop(1, 'rgba(14, 165, 160, 0.15)');
-      ctx.fillStyle = grad;
+      // Glow
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, barW, barH);
+      ctx.shadowBlur = 0;
 
-      const r = Math.min(4, barWidth / 2, Math.max(0, barH / 2));
-      if (barH > 1) {
-        ctx.beginPath();
-        ctx.moveTo(x, padTop + chartH);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.lineTo(x + barWidth - r, y);
-        ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + r);
-        ctx.lineTo(x + barWidth, padTop + chartH);
-        ctx.closePath();
-        ctx.fill();
-
-        // Top glow
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 240, 255, 0.3)';
-        ctx.shadowBlur = 8;
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
-        ctx.fillRect(x + 2, y, barWidth - 4, 1);
-        ctx.restore();
-      }
-
-      // Date label — skip crowded labels for 30-day view
+      // Date label
+      const labelStep = Math.ceil(barCount / 7);
       if (i % labelStep === 0 || i === barCount - 1) {
         ctx.fillStyle = '#3a4255';
-        ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.font = '9px "JetBrains Mono", monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(d.date.slice(5), x + barWidth / 2, H - 6);
+        const dateStr = daily[i].date ? daily[i].date.slice(5) : '';
+        ctx.fillText(dateStr, x + barW / 2, padTop + chartH + 18);
       }
+
+      chartBars.push({ x, y, w: barW, h: barH, date: daily[i].date, up: daily[i].up, down: daily[i].down });
     });
+
+    // Tooltip
+    setupChartTooltip(canvas);
   }
+
+  function setupChartTooltip(canvas) {
+    const container = canvas.parentElement;
+    let tooltip = container.querySelector('#chartTooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'chartTooltip';
+      tooltip.className = 'chart-tooltip';
+      container.appendChild(tooltip);
+    }
+    tooltip.style.display = 'none';
+
+    // Remove old listeners by replacing canvas
+    const newCanvas = canvas;
+    const handler = (e) => {
+      const rect = newCanvas.getBoundingClientRect();
+      const mx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const hit = chartBars.find(b => mx >= b.x && mx <= b.x + b.w);
+      if (hit) {
+        const fb = formatBytes(hit.up + hit.down);
+        const upF = formatBytes(hit.up);
+        const downF = formatBytes(hit.down);
+        tooltip.innerHTML = `<div class="tt-date">${hit.date || ''}</div><div class="tt-total">${fb.value}${fb.unit}</div><div class="tt-detail">↑${upF.value}${upF.unit} ↓${downF.value}${downF.unit}</div>`;
+        tooltip.style.display = 'block';
+        const tx = Math.min(hit.x + hit.w / 2, rect.width - 120);
+        tooltip.style.left = tx + 'px';
+        tooltip.style.top = Math.max(0, hit.y - 60) + 'px';
+      } else {
+        tooltip.style.display = 'none';
+      }
+    };
+    newCanvas.onmousemove = handler;
+    newCanvas.ontouchstart = handler;
+    newCanvas.onmouseleave = () => { tooltip.style.display = 'none'; };
+  }
+
+  window.toggleConfig = function () {
+    const body = document.getElementById('configBody');
+    const arrow = document.getElementById('configArrow');
+    if (!body) return;
+    if (body.style.display === 'none') {
+      body.style.display = 'flex';
+      if (arrow) arrow.textContent = '▼';
+    } else {
+      body.style.display = 'none';
+      if (arrow) arrow.textContent = '▶';
+    }
+  };
+
+  window.copyConfig = function () {
+    const input = document.getElementById('configInput');
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = document.querySelector('.config-copy-btn');
+      if (btn) { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制链接', 1500); }
+    }).catch(() => {});
+  };
 
   window.toggleDevices = function () {
     const list = document.getElementById('deviceList');
@@ -364,8 +475,8 @@
   };
 
   window.handleLogout = function () {
-    currentName = '';
-    localStorage.removeItem('sharev_name');
+    currentToken = '';
+    localStorage.removeItem('sharev_token');
     location.hash = '';
     if (refreshTimer) clearInterval(refreshTimer);
     showLogin();
@@ -381,5 +492,20 @@
     const el = document.createElement('span');
     el.textContent = s;
     return el.innerHTML;
+  }
+
+  // QR code generator using QRious library
+  function generateQR(text) {
+    const canvas = document.createElement('canvas');
+    new QRious({
+      element: canvas,
+      value: text,
+      size: 160,
+      level: 'M',
+      background: '#ffffff',
+      foreground: '#000000',
+      padding: 8,
+    });
+    return `<img src="${canvas.toDataURL()}" alt="QR Code" width="160" height="160" />`;
   }
 })();

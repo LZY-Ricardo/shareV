@@ -8,8 +8,21 @@ let snapshotRunning = false; // Mutex to prevent concurrent snapshots
 function init(cfg) {
   config = cfg;
   cron.schedule('*/5 * * * *', snapshot);
+  cron.schedule('0 0 * * *', snapshot);
   cron.schedule('0 3 * * *', db.cleanup);
-  console.log('[tracker] Scheduled: snapshot every 5min, cleanup daily at 3am');
+  console.log('[tracker] Scheduled: snapshot every 5min, midnight baseline, cleanup daily at 3am');
+  setTimeout(() => ensureTodayBaselineSnapshot(), 3000);
+}
+
+async function ensureTodayBaselineSnapshot() {
+  const todayStart = db.getTodayStart();
+  if (db.hasSnapshotsSince(todayStart)) {
+    console.log('[tracker] Startup daily baseline skipped: today already has snapshots');
+    return;
+  }
+
+  console.log('[tracker] Startup daily baseline missing: taking snapshot');
+  await snapshot();
 }
 
 async function snapshot() {
@@ -86,6 +99,7 @@ async function getUserStats(email) {
   let totalUp = 0, totalDown = 0;
   let monthUp = 0, monthDown = 0;
   let nodeInfo = null;
+  let configLink = null;
 
   if (liveClient) {
     const allTime = liveClient.allTime || 0;
@@ -100,6 +114,14 @@ async function getUserStats(email) {
     monthUp = liveClient.up || 0;
     monthDown = liveClient.down || 0;
 
+    // Get limitIp from settings.clients (not available in clientStats)
+    let limitIp = 0;
+    try {
+      const settings = JSON.parse(liveInbound.settings || '{}');
+      const clientCfg = (settings.clients || []).find(c => c.email === email);
+      if (clientCfg) limitIp = clientCfg.limitIp || 0;
+    } catch {}
+
     nodeInfo = {
       protocol: liveInbound.protocol,
       port: liveInbound.port,
@@ -107,8 +129,11 @@ async function getUserStats(email) {
       enable: liveClient.enable,
       totalGB: liveClient.total ? (liveClient.total / (1024 ** 3)).toFixed(1) : 0,
       expiryTime: liveClient.expiryTime,
-      limitIp: liveClient.limitIp,
+      limitIp,
     };
+
+    // Generate VLESS config link
+    configLink = buildConfigLink(liveInbound, liveClient);
   }
 
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
@@ -159,7 +184,41 @@ async function getUserStats(email) {
     deviceList,
     daily,
     node: nodeInfo,
+    configLink,
   };
 }
 
-module.exports = { init, snapshot, getUserStats };
+function buildConfigLink(inbound, client) {
+  if (!config.server || inbound.protocol !== 'vless') return null;
+  try {
+    // Get UUID from inbound.settings.clients (clientStats doesn't have it)
+    const settings = JSON.parse(inbound.settings || '{}');
+    const clientCfg = (settings.clients || []).find(c => c.email === client.email);
+    const uuid = clientCfg ? clientCfg.id : null;
+    if (!uuid) return null;
+
+    const stream = JSON.parse(inbound.streamSettings || '{}');
+    const reality = stream.realitySettings || {};
+    const pbk = reality.settings?.publicKey;
+    const sni = (reality.serverNames || [])[0];
+    const sid = (reality.shortIds || [])[0];
+    const fp = reality.settings?.fingerprint || 'chrome';
+    if (!pbk || !sni) return null;
+
+    const params = [
+      'encryption=none',
+      'security=reality',
+      `sni=${encodeURIComponent(sni)}`,
+      `fp=${encodeURIComponent(fp)}`,
+      `pbk=${encodeURIComponent(pbk)}`,
+      `sid=${encodeURIComponent(sid)}`,
+      'type=tcp',
+    ].join('&');
+
+    return `vless://${uuid}@${config.server}:${inbound.port}?${params}#${encodeURIComponent(client.email)}`;
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { init, snapshot, ensureTodayBaselineSnapshot, getUserStats };

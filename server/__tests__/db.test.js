@@ -1,6 +1,14 @@
 const { describe, it, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { createDB } = require('../db');
+
+function localDate(sec) {
+  const d = new Date(sec * 1000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 describe('db', () => {
   let db;
@@ -97,6 +105,34 @@ describe('db', () => {
       assert.equal(result.up, 500);
       assert.equal(result.down, 1500);
     });
+
+    it('does not overcount when estimated all-time directions drift', () => {
+      db.insertSnapshot('user1', 3_900_000, 65_000_000, 7_290_000_000, 120_540_000_000, 1200);
+      db.insertSnapshot('user1', 9_400_000, 937_000_000, 1_280_000_000, 127_430_000_000, 1500);
+
+      const result = db.getPeriodTraffic('user1', 1000);
+
+      assert.equal(result.up, 5_500_000);
+      assert.equal(result.down, 872_000_000);
+    });
+
+    it('uses post-reset counters when 3x-ui counters roll over', () => {
+      db.insertSnapshot('user1', 900, 1200, 900, 1200, 1200);
+      db.insertSnapshot('user1', 40, 70, 40, 70, 1500);
+
+      const result = db.getPeriodTraffic('user1', 1000);
+
+      assert.deepEqual(result, { up: 40, down: 70 });
+    });
+
+    it('uses all-time delta with current direction ratio when current counters reset but all-time keeps increasing', () => {
+      db.insertSnapshot('user1', 900, 1200, 900, 1200, 1200);
+      db.insertSnapshot('user1', 40, 120, 1000, 1400, 1500);
+
+      const result = db.getPeriodTraffic('user1', 1000);
+
+      assert.deepEqual(result, { up: 75, down: 225 });
+    });
   });
 
   describe('insertSnapshots (batch)', () => {
@@ -120,6 +156,20 @@ describe('db', () => {
       assert.equal(daily.length, 7);
       assert.ok(daily[0].date.match(/^\d{4}-\d{2}-\d{2}$/));
     });
+
+    it('uses the first in-day snapshot as baseline when there is no midnight snapshot', () => {
+      const today = db.getTodayStart();
+      db.insertSnapshot('user1', 3_900_000, 65_000_000, 7_290_000_000, 120_540_000_000, today + 60);
+      db.insertSnapshot('user1', 9_400_000, 937_000_000, 1_280_000_000, 127_430_000_000, today + 120);
+
+      const daily = db.getDailyTraffic('user1', 1);
+
+      assert.deepEqual(daily[0], {
+        date: localDate(today),
+        up: 5_500_000,
+        down: 872_000_000,
+      });
+    });
   });
 
   describe('cleanup', () => {
@@ -130,6 +180,20 @@ describe('db', () => {
       db.cleanup();
       const snap = db.getLatestSnapshot('user1');
       assert.equal(snap.up, 3);
+    });
+  });
+
+  describe('backup', () => {
+    it('returns a promise that resolves after the backup is written', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sharev-backup-'));
+      const dest = path.join(dir, 'traffic.db.bak');
+
+      db.insertSnapshot('user1', 1, 2, 10, 20, 1000);
+      const backup = db.backup(dest);
+
+      assert.equal(typeof backup.then, 'function');
+      await backup;
+      assert.equal(fs.existsSync(dest), true);
     });
   });
 });
