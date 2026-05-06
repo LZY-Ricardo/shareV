@@ -9,6 +9,10 @@ function init(cfg) {
   config = cfg;
 }
 
+function shouldRejectUnauthorized(hostname) {
+  return !['127.0.0.1', 'localhost', 'host.docker.internal'].includes(hostname);
+}
+
 function request(method, path, body = null) {
   return new Promise((resolve, reject) => {
     const url = new URL(path, config.baseUrl);
@@ -25,7 +29,7 @@ function request(method, path, body = null) {
         'Accept': 'application/json',
       },
       // Self-signed cert on localhost — acceptable for internal API calls
-      rejectUnauthorized: url.hostname !== '127.0.0.1' && url.hostname !== 'localhost',
+      rejectUnauthorized: shouldRejectUnauthorized(url.hostname),
       timeout: 10000, // 10s timeout
     };
 
@@ -115,4 +119,5 @@ module.exports = {
   getInbounds,
   getClientIps,
   getOnlineClients,
+  shouldRejectUnauthorized,
 };
