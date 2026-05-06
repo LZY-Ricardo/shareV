@@ -7,3 +7,6 @@ Thumbs.db
 .claude/
 .playwright-cli/
 output/
+DEPLOYMENT.md
+CLAUDE.md
+.env

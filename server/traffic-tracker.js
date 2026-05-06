@@ -5,6 +5,24 @@ const db = require('./db');
 let config = null;
 let snapshotRunning = false; // Mutex to prevent concurrent snapshots
 
+function splitAllTimeByCurrentTraffic(up, down, allTime) {
+  const currentTotal = up + down;
+  if (currentTotal > 0 && allTime > 0) {
+    const totalUp = Math.round(allTime * (up / currentTotal));
+    return { up: totalUp, down: allTime - totalUp };
+  }
+  if (allTime > 0) return { up: 0, down: allTime };
+  return { up, down };
+}
+
+function snapshotTrafficTotal(row) {
+  if (!row) return { up: 0, down: 0 };
+  const allUp = row.allUp || 0;
+  const allDown = row.allDown || 0;
+  if (allUp + allDown > 0) return { up: allUp, down: allDown };
+  return { up: row.up || 0, down: row.down || 0 };
+}
+
 function init(cfg) {
   config = cfg;
   cron.schedule('*/5 * * * *', snapshot);
@@ -96,21 +114,20 @@ async function getUserStats(email) {
     console.warn('[tracker] Failed to fetch live data:', err.message);
   }
 
-  let totalUp = 0, totalDown = 0;
+  const latestSnapshot = db.getLatestSnapshot(email);
+  let { up: totalUp, down: totalDown } = snapshotTrafficTotal(latestSnapshot);
   let monthUp = 0, monthDown = 0;
   let nodeInfo = null;
   let configLink = null;
 
   if (liveClient) {
-    const allTime = liveClient.allTime || 0;
-    const totalTraffic = liveClient.up + liveClient.down;
-    if (totalTraffic > 0 && allTime > 0) {
-      totalUp = Math.round(allTime * (liveClient.up / totalTraffic));
-      totalDown = allTime - totalUp;
-    } else if (allTime > 0) {
-      totalUp = 0;
-      totalDown = allTime;
-    }
+    const totalTraffic = splitAllTimeByCurrentTraffic(
+      liveClient.up || 0,
+      liveClient.down || 0,
+      liveClient.allTime || 0
+    );
+    totalUp = totalTraffic.up;
+    totalDown = totalTraffic.down;
     monthUp = liveClient.up || 0;
     monthDown = liveClient.down || 0;
 
@@ -189,7 +206,7 @@ async function getUserStats(email) {
 }
 
 function buildConfigLink(inbound, client) {
-  if (!config.server || inbound.protocol !== 'vless') return null;
+  if (!config || !config.server || inbound.protocol !== 'vless') return null;
   try {
     // Get UUID from inbound.settings.clients (clientStats doesn't have it)
     const settings = JSON.parse(inbound.settings || '{}');

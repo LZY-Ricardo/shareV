@@ -133,6 +133,15 @@ describe('db', () => {
 
       assert.deepEqual(result, { up: 75, down: 225 });
     });
+
+    it('does not count recovered all-time totals as period traffic when current counters did not move', () => {
+      db.insertSnapshot('user1', 0, 0, 0, 0, 1200);
+      db.insertSnapshot('user1', 0, 0, 0, 1_000, 1500);
+
+      const result = db.getPeriodTraffic('user1', 1000);
+
+      assert.deepEqual(result, { up: 0, down: 0 });
+    });
   });
 
   describe('insertSnapshots (batch)', () => {

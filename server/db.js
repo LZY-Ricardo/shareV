@@ -101,6 +101,14 @@ function createDB(dbPath) {
       return splitByRatio(currentUp, currentDown);
     }
 
+    if (!rawReset && rawTotal === 0) {
+      return { up: 0, down: 0 };
+    }
+
+    if (!rawReset && rawTotal > 0 && fromTotal === 0 && toTotal > rawTotal) {
+      return { up: rawUp, down: rawDown };
+    }
+
     const tolerance = Math.max(1, totalDelta * 0.01);
     if (rawUp >= 0 && rawDown >= 0 && rawTotal > 0 && Math.abs(rawTotal - totalDelta) <= tolerance) {
       return { up: rawUp, down: rawDown };
@@ -205,6 +213,7 @@ function createDB(dbPath) {
     insertSnapshot,
     insertSnapshots,
     getSnapshotAtOrBefore,
+    getSnapshotAtOrAfter,
     getLatestSnapshot,
     getDailyTraffic,
     getPeriodTraffic,
