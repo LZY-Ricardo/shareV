@@ -50,6 +50,13 @@ function getLatestSnapshot(email) {
   ).get(email);
 }
 
+// Get the earliest snapshot at or after a given timestamp for an email
+function getSnapshotAtOrAfter(email, timestamp) {
+  return db.prepare(
+    'SELECT up, down, allUp, allDown, timestamp FROM traffic_snapshots WHERE email = ? AND timestamp >= ? ORDER BY timestamp ASC LIMIT 1'
+  ).get(email, timestamp);
+}
+
 // Format Date to YYYY-MM-DD using local timezone
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -93,7 +100,17 @@ function getPeriodTraffic(email, startTimestamp) {
   const latest = getLatestSnapshot(email);
 
   if (!latest) return { up: 0, down: 0 };
-  if (!before) return { up: latest.allUp || latest.up, down: latest.allDown || latest.down };
+  if (!before) {
+    // No baseline before period start — use earliest snapshot after start as fallback
+    const earliest = getSnapshotAtOrAfter(email, startTimestamp);
+    if (earliest && earliest.timestamp < latest.timestamp) {
+      return {
+        up: Math.max(0, (latest.allUp || latest.up) - (earliest.allUp || earliest.up)),
+        down: Math.max(0, (latest.allDown || latest.down) - (earliest.allDown || earliest.down)),
+      };
+    }
+    return { up: 0, down: 0 };
+  }
 
   return {
     up: Math.max(0, (latest.allUp || latest.up) - (before.allUp || before.up)),
