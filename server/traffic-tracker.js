@@ -3,18 +3,22 @@ const xui = require('./xui-api');
 const db = require('./db');
 
 let config = null;
+let snapshotRunning = false; // Mutex to prevent concurrent snapshots
 
 function init(cfg) {
   config = cfg;
-  // Run every 5 minutes
   cron.schedule('*/5 * * * *', snapshot);
-  // Cleanup old data daily at 3am
   cron.schedule('0 3 * * *', db.cleanup);
   console.log('[tracker] Scheduled: snapshot every 5min, cleanup daily at 3am');
 }
 
-// Take a snapshot of all client traffic from 3X-UI
 async function snapshot() {
+  if (snapshotRunning) {
+    console.log('[tracker] Snapshot skipped: already running');
+    return;
+  }
+  snapshotRunning = true;
+
   try {
     const inbounds = await xui.getInbounds();
     const now = Math.floor(Date.now() / 1000);
@@ -24,14 +28,27 @@ async function snapshot() {
       if (!inbound.clientStats) continue;
       for (const client of inbound.clientStats) {
         if (!client.email) continue;
-        rows.push({
-          email: client.email,
-          up: client.up || 0,
-          down: client.down || 0,
-          allUp: client.allTime ? Math.round(client.allTime * (client.up / ((client.up + client.down) || 1))) : (client.up || 0),
-          allDown: client.allTime ? Math.round(client.allTime * (client.down / ((client.up + client.down) || 1))) : (client.down || 0),
-          timestamp: now,
-        });
+
+        // Calculate allUp/allDown from allTime
+        const up = client.up || 0;
+        const down = client.down || 0;
+        const allTime = client.allTime || 0;
+        const totalTraffic = up + down;
+
+        let allUp, allDown;
+        if (totalTraffic > 0 && allTime > 0) {
+          allUp = Math.round(allTime * (up / totalTraffic));
+          allDown = allTime - allUp;
+        } else if (allTime > 0) {
+          // No current period traffic but has allTime — store as-is
+          allUp = 0;
+          allDown = allTime;
+        } else {
+          allUp = up;
+          allDown = down;
+        }
+
+        rows.push({ email: client.email, up, down, allUp, allDown, timestamp: now });
       }
     }
 
@@ -41,14 +58,14 @@ async function snapshot() {
     }
   } catch (err) {
     console.error('[tracker] Snapshot failed:', err.message);
+  } finally {
+    snapshotRunning = false;
   }
 }
 
-// Get all stats for a specific user (by email)
 async function getUserStats(email) {
   const now = Math.floor(Date.now() / 1000);
 
-  // Fetch live data from 3X-UI
   let liveClient = null;
   let liveInbound = null;
   try {
@@ -62,11 +79,10 @@ async function getUserStats(email) {
         break;
       }
     }
-  } catch {
-    // fallback to snapshot data
+  } catch (err) {
+    console.warn('[tracker] Failed to fetch live data:', err.message);
   }
 
-  // Total: directly from 3X-UI allTime
   let totalUp = 0, totalDown = 0;
   let monthUp = 0, monthDown = 0;
   let nodeInfo = null;
@@ -74,12 +90,13 @@ async function getUserStats(email) {
   if (liveClient) {
     const allTime = liveClient.allTime || 0;
     const totalTraffic = liveClient.up + liveClient.down;
-    // Split allTime proportionally into up/down
-    if (totalTraffic > 0) {
+    if (totalTraffic > 0 && allTime > 0) {
       totalUp = Math.round(allTime * (liveClient.up / totalTraffic));
       totalDown = allTime - totalUp;
+    } else if (allTime > 0) {
+      totalUp = 0;
+      totalDown = allTime;
     }
-    // Month: current period up/down (3X-UI resets monthly)
     monthUp = liveClient.up || 0;
     monthDown = liveClient.down || 0;
 
@@ -94,13 +111,9 @@ async function getUserStats(email) {
     };
   }
 
-  // Today: delta from snapshots
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
-
-  // Daily traffic for chart (last 7 days)
   const daily = db.getDailyTraffic(email, 7);
 
-  // Device count (unique IPs)
   let deviceCount = 0;
   try {
     const ipData = await xui.getClientIps(email);
@@ -110,7 +123,8 @@ async function getUserStats(email) {
         .filter(([, ts]) => ts >= thirtyMinAgo)
         .length;
     }
-  } catch {
+  } catch (err) {
+    console.warn('[tracker] Failed to fetch device count:', err.message);
     deviceCount = 0;
   }
 

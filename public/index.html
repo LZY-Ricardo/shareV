@@ -3,23 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>流量看板</title>
+  <title>shareV // 流量监控</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <!-- Grid background -->
+  <div class="grid-bg"></div>
+  <div class="scanline"></div>
+
   <div class="container">
-    <div class="header">
-      <h1 id="userName">加载中...</h1>
+    <header class="header">
+      <div class="logo-mark">
+        <span class="logo-bracket">[</span>
+        <span class="logo-text" id="userName">shareV</span>
+        <span class="logo-bracket">]</span>
+      </div>
       <div class="subtitle" id="updateTime"></div>
-    </div>
+    </header>
 
-    <div id="content">
-      <div class="loading">加载中...</div>
-    </div>
+    <main id="content">
+      <div class="loading">
+        <div class="loader-bar"></div>
+      </div>
+    </main>
 
-    <div class="footer">
-      shareV Traffic Dashboard
-    </div>
+    <footer class="footer">
+      <span class="footer-dim">SYS::SHAREV</span>
+      <span class="footer-sep"> ─ </span>
+      <span class="footer-dim">v1.0.0</span>
+    </footer>
   </div>
 
   <script src="/app.js"></script>

@@ -2,9 +2,11 @@
   let refreshTimer = null;
   let currentName = '';
 
-  // Check URL hash for pre-filled name
+  const savedName = localStorage.getItem('sharev_name');
   if (location.hash) {
     currentName = decodeURIComponent(location.hash.slice(1));
+  } else if (savedName) {
+    currentName = savedName;
   }
 
   if (currentName) {
@@ -14,19 +16,22 @@
   }
 
   function showLogin() {
-    document.getElementById('userName').textContent = '流量看板';
-    document.getElementById('updateTime').textContent = '输入你的用户名查看流量信息';
+    document.getElementById('userName').textContent = 'shareV';
+    document.getElementById('updateTime').textContent = 'TRAFFIC MONITORING SYSTEM';
     document.getElementById('content').innerHTML = `
       <div class="login-box">
         <div class="login-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8"/>
+            <path d="M12 17v4"/>
+            <circle cx="12" cy="10" r="2"/>
           </svg>
         </div>
+        <div class="login-title">输入用户名以查看流量数据</div>
         <div class="login-form">
-          <input type="text" id="nameInput" placeholder="输入你的用户名" autocomplete="off" spellcheck="false" />
-          <button id="loginBtn" onclick="handleLogin()">查 询</button>
+          <input type="text" id="nameInput" placeholder="用户名" autocomplete="off" spellcheck="false" />
+          <button id="loginBtn" onclick="handleLogin()">GO</button>
         </div>
       </div>`;
     const input = document.getElementById('nameInput');
@@ -40,6 +45,7 @@
     const name = document.getElementById('nameInput').value.trim();
     if (!name) return;
     currentName = name;
+    localStorage.setItem('sharev_name', name);
     location.hash = encodeURIComponent(name);
     showDashboard();
   };
@@ -77,9 +83,10 @@
   }
 
   function render(data) {
-    document.getElementById('userName').textContent = `${data.name} 的流量看板`;
+    document.getElementById('userName').textContent = data.name;
+    const ts = new Date().toLocaleString('zh-CN');
     document.getElementById('updateTime').innerHTML =
-      `更新于 ${new Date().toLocaleString('zh-CN')} <a href="#" class="back-link" onclick="handleLogout()">切换用户</a>`;
+      `LAST_SYNC ${ts} <a href="#" class="back-link" onclick="handleLogout()">[切换]</a>`;
 
     const node = data.node || {};
     const devices = data.devices || 0;
@@ -89,12 +96,12 @@
     // Node info bar
     html += '<div class="node-bar">';
     if (node.remark) {
-      html += `<span class="tag">${esc(node.protocol || 'VLESS')} : ${node.port || ''}</span>`;
-      html += `<span>${esc(node.remark)}</span>`;
+      html += `<span class="tag">${esc(node.protocol || 'vless')}</span>`;
+      html += `<span class="node-name">${esc(node.remark)}</span>`;
     }
     html += `<span class="device-count">`;
-    html += `<span class="dot ${devices > 0 ? '' : 'offline'}"></span>`;
-    html += `${devices} 台设备`;
+    html += `<span class="dot ${devices > 0 ? 'online' : 'offline'}"></span>`;
+    html += `${devices} DEVICE${devices !== 1 ? 'S' : ''}`;
     html += `</span>`;
     html += '</div>';
 
@@ -104,14 +111,14 @@
     const total = sumTraffic(data.total.up, data.total.down);
 
     html += '<div class="cards">';
-    html += card('今日', today, 'today', data.today.up, data.today.down);
-    html += card('本月', month, 'month', data.month.up, data.month.down);
-    html += card('总计', total, 'total', data.total.up, data.total.down);
+    html += card('TODAY', today, 'today', data.today.up, data.today.down);
+    html += card('MONTH', month, 'month', data.month.up, data.month.down);
+    html += card('TOTAL', total, 'total', data.total.up, data.total.down);
     html += '</div>';
 
     // Chart
     html += '<div class="chart-section">';
-    html += '<div class="title">最近 7 天流量趋势</div>';
+    html += '<div class="title">7 DAY TREND</div>';
     html += '<div class="chart-container"><canvas id="chart"></canvas></div>';
     html += '</div>';
 
@@ -129,7 +136,7 @@
       <div class="card ${cls}">
         <div class="label">${label}</div>
         <div class="value">${formatted.value}<span class="unit">${formatted.unit}</span></div>
-        <div class="detail">↑ ${upF.value}${upF.unit} / ↓ ${downF.value}${downF.unit}</div>
+        <div class="detail">↑${upF.value}${upF.unit} ↓${downF.value}${downF.unit}</div>
       </div>`;
   }
 
@@ -149,9 +156,9 @@
 
     const W = rect.width;
     const H = rect.height;
-    const padLeft = 48;
-    const padRight = 12;
-    const padTop = 12;
+    const padLeft = 50;
+    const padRight = 14;
+    const padTop = 14;
     const padBottom = 28;
     const chartW = W - padLeft - padRight;
     const chartH = H - padTop - padBottom;
@@ -159,10 +166,11 @@
     const values = daily.map(d => d.up + d.down);
     const maxVal = Math.max(...values, 1024 * 1024 * 100);
 
-    ctx.strokeStyle = '#2a2d3a';
+    // Grid lines
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.06)';
     ctx.lineWidth = 0.5;
-    ctx.fillStyle = '#8b8d98';
-    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#3a4255';
+    ctx.font = '10px "JetBrains Mono", monospace';
     ctx.textAlign = 'right';
 
     for (let i = 0; i <= 3; i++) {
@@ -173,9 +181,10 @@
       ctx.stroke();
       const val = maxVal * (1 - i / 3);
       const fb = formatBytes(val);
-      ctx.fillText(fb.value + fb.unit, padLeft - 6, y + 3);
+      ctx.fillText(fb.value + fb.unit, padLeft - 8, y + 4);
     }
 
+    // Bars
     const barCount = daily.length;
     const barGap = 8;
     const barWidth = (chartW - barGap * (barCount + 1)) / barCount;
@@ -186,13 +195,15 @@
       const x = padLeft + barGap + i * (barWidth + barGap);
       const y = padTop + chartH - barH;
 
+      // Bar gradient
       const grad = ctx.createLinearGradient(x, y, x, padTop + chartH);
-      grad.addColorStop(0, '#6366f1');
-      grad.addColorStop(1, '#3b82f6');
+      grad.addColorStop(0, 'rgba(0, 240, 255, 0.9)');
+      grad.addColorStop(0.5, 'rgba(14, 165, 160, 0.6)');
+      grad.addColorStop(1, 'rgba(14, 165, 160, 0.15)');
       ctx.fillStyle = grad;
 
-      const r = Math.min(4, barWidth / 2, barH / 2);
-      if (barH > 0) {
+      const r = Math.min(4, barWidth / 2, Math.max(0, barH / 2));
+      if (barH > 1) {
         ctx.beginPath();
         ctx.moveTo(x, padTop + chartH);
         ctx.lineTo(x, y + r);
@@ -202,10 +213,19 @@
         ctx.lineTo(x + barWidth, padTop + chartH);
         ctx.closePath();
         ctx.fill();
+
+        // Top glow
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 240, 255, 0.3)';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
+        ctx.fillRect(x + 2, y, barWidth - 4, 1);
+        ctx.restore();
       }
 
-      ctx.fillStyle = '#8b8d98';
-      ctx.font = '10px sans-serif';
+      // Date label
+      ctx.fillStyle = '#3a4255';
+      ctx.font = '10px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
       ctx.fillText(d.date.slice(5), x + barWidth / 2, H - 6);
     });
@@ -213,6 +233,7 @@
 
   window.handleLogout = function () {
     currentName = '';
+    localStorage.removeItem('sharev_name');
     location.hash = '';
     if (refreshTimer) clearInterval(refreshTimer);
     showLogin();
@@ -220,7 +241,7 @@
 
   function showError(msg) {
     document.getElementById('content').innerHTML =
-      `<div class="error-msg">${esc(msg)}</div>`;
+      `<div class="error-msg">ERR:: ${esc(msg)}</div>`;
   }
 
   function esc(s) {

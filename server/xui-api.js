@@ -23,7 +23,9 @@ function request(method, path, body = null) {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      rejectUnauthorized: false,
+      // Self-signed cert on localhost — acceptable for internal API calls
+      rejectUnauthorized: url.hostname !== '127.0.0.1' && url.hostname !== 'localhost',
+      timeout: 10000, // 10s timeout
     };
 
     if (sessionCookie) {
@@ -31,7 +33,6 @@ function request(method, path, body = null) {
     }
 
     const req = transport.request(options, (res) => {
-      // Capture session cookie from login response
       const setCookie = res.headers['set-cookie'];
       if (setCookie) {
         for (const cookie of setCookie) {
@@ -46,12 +47,16 @@ function request(method, path, body = null) {
         try {
           resolve(JSON.parse(data));
         } catch {
-          resolve(data);
+          resolve(null);
         }
       });
     });
 
     req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('API request timeout'));
+    });
     if (body) req.write(JSON.stringify(body));
     req.end();
   });
@@ -62,8 +67,8 @@ async function login() {
     username: config.username,
     password: config.password,
   });
-  if (!result.success) {
-    throw new Error(`3X-UI login failed: ${JSON.stringify(result)}`);
+  if (!result || !result.success) {
+    throw new Error('3X-UI login failed');
   }
   return result;
 }
@@ -73,9 +78,9 @@ async function ensureLogin() {
     await login();
     return;
   }
-  // Verify session is still valid
   const result = await request('GET', 'panel/api/inbounds/list');
-  if (!result.success) {
+  if (!result || !result.success) {
+    sessionCookie = null;
     await login();
   }
 }
@@ -83,21 +88,21 @@ async function ensureLogin() {
 async function getInbounds() {
   await ensureLogin();
   const result = await request('GET', 'panel/api/inbounds/list');
-  if (!result.success) throw new Error('Failed to get inbounds');
+  if (!result || !result.success) throw new Error('Failed to get inbounds');
   return result.obj || [];
 }
 
 async function getClientIps(email) {
   await ensureLogin();
   const result = await request('POST', `panel/api/inbounds/clientIps/${encodeURIComponent(email)}`);
-  if (!result.success) return { ips: [] };
+  if (!result || !result.success) return { ips: [] };
   return result.obj || { ips: [] };
 }
 
 async function getOnlineClients() {
   await ensureLogin();
   const result = await request('POST', 'panel/api/inbounds/onlines');
-  if (!result.success) return [];
+  if (!result || !result.success) return [];
   return result.obj || [];
 }
 
