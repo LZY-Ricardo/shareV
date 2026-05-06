@@ -476,6 +476,93 @@ canvas#chart { width: 100%; height: 100%; }
 
 .footer-sep { color: var(--border-glow); }
 
+/* ── Quota Progress ── */
+.quota-section {
+  margin-bottom: 20px;
+  animation: cardIn 0.5s ease-out 0.08s both;
+}
+
+.quota-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.quota-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--teal));
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+.quota-fill.warn {
+  background: linear-gradient(90deg, var(--amber), #e88830);
+}
+
+.quota-fill.danger {
+  background: linear-gradient(90deg, var(--red), #e02040);
+}
+
+.quota-info {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.quota-pct {
+  font-weight: 600;
+  color: var(--cyan);
+}
+
+.quota-pct.warn { color: var(--amber); }
+.quota-pct.danger { color: var(--red); }
+
+.quota-expiry {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* ── Cards Toggle ── */
+.cards-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  justify-content: flex-end;
+  animation: cardIn 0.5s ease-out 0.12s both;
+}
+
+.toggle-btn {
+  padding: 4px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.toggle-btn:hover { border-color: var(--border-bright); color: var(--text); }
+
+.toggle-btn.active {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+.card.period .value { color: var(--amber); text-shadow: 0 0 20px var(--amber-dim); }
+.card.period::before { background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+.card.period:hover { box-shadow: 0 8px 30px rgba(240, 160, 48, 0.08); }
+
 /* ── Device List ── */
 .device-list {
   background: var(--bg-card);

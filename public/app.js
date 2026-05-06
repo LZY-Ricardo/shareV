@@ -111,6 +111,32 @@
     html += `</span>`;
     html += '</div>';
 
+    // Quota progress bar
+    if (node.totalGB && node.totalGB > 0) {
+      const totalBytes = node.totalGB * (1024 ** 3);
+      const usedBytes = data.total.up + data.total.down;
+      const pct = Math.min(100, (usedBytes / totalBytes) * 100);
+      const usedF = formatBytes(usedBytes);
+      const cls = pct > 90 ? 'danger' : pct > 70 ? 'warn' : '';
+
+      html += '<div class="quota-section">';
+      html += '<div class="quota-bar">';
+      html += `<div class="quota-fill ${cls}" style="width:${pct.toFixed(1)}%"></div>`;
+      html += '</div>';
+      html += '<div class="quota-info">';
+      html += `<span>${usedF.value}${usedF.unit} / ${node.totalGB} GB</span>`;
+      html += `<span class="quota-pct ${cls}">${pct.toFixed(1)}%</span>`;
+      html += '</div>';
+
+      if (node.expiryTime && node.expiryTime > 0) {
+        const expDate = new Date(node.expiryTime);
+        const daysLeft = Math.max(0, Math.ceil((expDate - Date.now()) / (1000 * 60 * 60 * 24)));
+        const expStr = expDate.toLocaleDateString('zh-CN');
+        html += `<div class="quota-expiry">${daysLeft > 0 ? '剩余 ' + daysLeft + ' 天' : '已到期'} · ${expStr}</div>`;
+      }
+      html += '</div>';
+    }
+
     // Device detail list (hidden by default)
     if (deviceList.length > 0) {
       html += '<div class="device-list" id="deviceList" style="display:none">';
@@ -124,27 +150,39 @@
       html += '</div>';
     }
 
-    // Traffic cards
+    // Traffic cards with period toggle
     const today = sumTraffic(data.today.up, data.today.down);
-    const month = sumTraffic(data.month.up, data.month.down);
     const total = sumTraffic(data.total.up, data.total.down);
 
-    html += '<div class="cards">';
+    // Compute 7-day and 30-day sums from daily data
+    const daily = data.daily || [];
+    const last7 = daily.slice(-7);
+    const last30 = daily;
+    const sum7 = sumTraffic(last7.reduce((s, d) => s + d.up, 0), last7.reduce((s, d) => s + d.down, 0));
+    const sum30 = sumTraffic(last30.reduce((s, d) => s + d.up, 0), last30.reduce((s, d) => s + d.down, 0));
+    const sum7raw = { up: last7.reduce((s, d) => s + d.up, 0), down: last7.reduce((s, d) => s + d.down, 0) };
+    const sum30raw = { up: last30.reduce((s, d) => s + d.up, 0), down: last30.reduce((s, d) => s + d.down, 0) };
+
+    html += '<div class="cards-toggle">';
+    html += '<button class="toggle-btn active" onclick="switchPeriod(7)">7天</button>';
+    html += '<button class="toggle-btn" onclick="switchPeriod(30)">30天</button>';
+    html += '</div>';
+    html += '<div class="cards" id="trafficCards">';
     html += card('TODAY', today, 'today', data.today.up, data.today.down);
-    html += card('MONTH', month, 'month', data.month.up, data.month.down);
+    html += card('近7天', sum7, 'period', sum7raw.up, sum7raw.down);
     html += card('TOTAL', total, 'total', data.total.up, data.total.down);
     html += '</div>';
 
     // Chart
     html += '<div class="chart-section">';
-    html += '<div class="title">7 DAY TREND</div>';
+    html += '<div class="title" id="chartTitle">7 DAY TREND</div>';
     html += '<div class="chart-container"><canvas id="chart"></canvas></div>';
     html += '</div>';
 
     document.getElementById('content').innerHTML = html;
 
-    if (data.daily && data.daily.length > 0) {
-      drawChart(data.daily);
+    if (daily.length > 0) {
+      drawChart(last7);
     }
   }
 
@@ -158,6 +196,42 @@
         <div class="detail">↑${upF.value}${upF.unit} ↓${downF.value}${downF.unit}</div>
       </div>`;
   }
+
+  // Store last data for period switching
+  let lastData = null;
+  const origRender = render;
+  render = function(data) {
+    lastData = data;
+    origRender(data);
+  };
+
+  window.switchPeriod = function (days) {
+    if (!lastData) return;
+    const daily = lastData.daily || [];
+    const slice = days === 7 ? daily.slice(-7) : daily;
+    const periodUp = slice.reduce((s, d) => s + d.up, 0);
+    const periodDown = slice.reduce((s, d) => s + d.down, 0);
+    const periodF = formatBytes(periodUp + periodDown);
+    const cards = document.getElementById('trafficCards');
+    if (!cards) return;
+    const periodCard = cards.querySelector('.period .label');
+    const periodValue = cards.querySelector('.period .value');
+    const periodDetail = cards.querySelector('.period .detail');
+    if (periodCard) periodCard.textContent = days === 7 ? '近7天' : '近30天';
+    if (periodValue) periodValue.innerHTML = `${periodF.value}<span class="unit">${periodF.unit}</span>`;
+    const upF = formatBytes(periodUp);
+    const downF = formatBytes(periodDown);
+    if (periodDetail) periodDetail.textContent = `↑${upF.value}${upF.unit} ↓${downF.value}${downF.unit}`;
+
+    // Update chart title and redraw
+    const title = document.getElementById('chartTitle');
+    if (title) title.textContent = days === 7 ? '7 DAY TREND' : '30 DAY TREND';
+    drawChart(slice);
+
+    // Update toggle buttons
+    document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.toggle-btn[onclick="switchPeriod(${days})"]`)?.classList.add('active');
+  };
 
   function drawChart(daily) {
     const canvas = document.getElementById('chart');
@@ -205,8 +279,9 @@
 
     // Bars
     const barCount = daily.length;
-    const barGap = 8;
+    const barGap = barCount > 15 ? 2 : 8;
     const barWidth = (chartW - barGap * (barCount + 1)) / barCount;
+    const labelStep = barCount > 15 ? Math.ceil(barCount / 7) : 1;
 
     daily.forEach((d, i) => {
       const val = d.up + d.down;
@@ -242,11 +317,13 @@
         ctx.restore();
       }
 
-      // Date label
-      ctx.fillStyle = '#3a4255';
-      ctx.font = '10px "JetBrains Mono", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(d.date.slice(5), x + barWidth / 2, H - 6);
+      // Date label — skip crowded labels for 30-day view
+      if (i % labelStep === 0 || i === barCount - 1) {
+        ctx.fillStyle = '#3a4255';
+        ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(d.date.slice(5), x + barWidth / 2, H - 6);
+      }
     });
   }
 

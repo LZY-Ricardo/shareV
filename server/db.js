@@ -133,6 +133,15 @@ function getMonthStart() {
   return Math.floor(now.getTime() / 1000);
 }
 
+// Get last month's start timestamp (1st day of previous month, midnight)
+function getLastMonthStart() {
+  const now = new Date();
+  now.setMonth(now.getMonth() - 1);
+  now.setDate(1);
+  now.setHours(0, 0, 0, 0);
+  return Math.floor(now.getTime() / 1000);
+}
+
 // Clean up old snapshots (keep last 90 days)
 function cleanup() {
   const cutoff = Math.floor(Date.now() / 1000) - 90 * 24 * 3600;
@@ -148,5 +157,6 @@ module.exports = {
   getPeriodTraffic,
   getTodayStart,
   getMonthStart,
+  getLastMonthStart,
   cleanup,
 };

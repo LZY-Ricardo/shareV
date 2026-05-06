@@ -112,7 +112,9 @@ async function getUserStats(email) {
   }
 
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
-  const daily = db.getDailyTraffic(email, 7);
+  const daily = db.getDailyTraffic(email, 30);
+  const thisMonthTraffic = db.getPeriodTraffic(email, db.getMonthStart());
+  const lastMonthTraffic = db.getPeriodTraffic(email, db.getLastMonthStart());
 
   // Check online status + device details
   let online = false;
@@ -150,6 +152,8 @@ async function getUserStats(email) {
     today: todayTraffic,
     month: { up: monthUp, down: monthDown },
     total: { up: totalUp, down: totalDown },
+    thisMonth: thisMonthTraffic,
+    lastMonth: lastMonthTraffic,
     online,
     devices: deviceList.length,
     deviceList,
