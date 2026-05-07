@@ -7,6 +7,7 @@ const tracker = require('./traffic-tracker');
 const db = require('./db');
 const { createUserDirectory } = require('./user-directory');
 const { resolvePublicUrl } = require('./public-url');
+const { getClashProfileFilename } = require('./clash-profile-name');
 
 // Load config
 const configPath = path.join(__dirname, '..', 'config.json');
@@ -135,7 +136,7 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
 
     res.setHeader('content-type', 'text/yaml; charset=utf-8');
     res.setHeader('cache-control', 'no-store');
-    const filename = encodeURIComponent(`${user.name || user.email}.yaml`);
+    const filename = encodeURIComponent(getClashProfileFilename(user));
     res.setHeader(
       'content-disposition',
       `inline; filename="clash.yaml"; filename*=UTF-8''${filename}`
