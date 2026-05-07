@@ -639,7 +639,7 @@
       level: 'M',
       background: '#ffffff',
       foreground: '#000000',
-      padding: 8,
+      padding: 2,
     });
     return `<img src="${canvas.toDataURL()}" alt="QR Code" width="160" height="160" />`;
   }
