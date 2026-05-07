@@ -303,10 +303,11 @@
         html += '<div class="config-actions">';
         html += '<button class="config-clash-btn" onclick="copyClashConfig()">复制订阅</button>';
         html += '<button class="config-clash-import-btn" onclick="importToClashVerge()">导入 Clash Verge</button>';
-        html += '<button class="config-help-btn" onclick="openGuide()">查看导入教程</button>';
+        html += '<button class="config-help-btn" onclick="openClashGuide()">查看导入教程</button>';
         html += '</div>';
+        html += '<div class="config-tip">请确保 Clash Verge 已打开，再点击"导入"。若应用未运行，首次点击仅会启动应用，需再次点击才能完成导入。</div>';
         html += '<div class="qr-container" id="qrContainerClash"></div>';
-        html += '<div class="config-hint">不会导入？打开教程按步骤操作。也可扫描二维码导入 · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
+        html += '<div class="config-hint">也可扫描二维码导入 · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
         html += '</div>';
       }
       html += '</div>';
@@ -706,6 +707,15 @@
     if (lastData?.name) localStorage.setItem('sharev_guide_user', lastData.name);
     if (currentToken) localStorage.setItem('sharev_guide_token', currentToken);
     window.open('/guide.html', '_blank', 'noopener');
+  };
+
+  window.openClashGuide = function () {
+    const input = document.getElementById('clashConfigUrl');
+    const link = input ? input.value : '';
+    if (link) localStorage.setItem('sharev_clash_link', link);
+    if (lastData?.name) localStorage.setItem('sharev_guide_user', lastData.name);
+    if (currentToken) localStorage.setItem('sharev_guide_token', currentToken);
+    window.open('/guide-clash.html', '_blank', 'noopener');
   };
 
   window.toggleDevices = function () {
