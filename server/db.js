@@ -209,6 +209,27 @@ function createDB(dbPath) {
     db.prepare('DELETE FROM traffic_snapshots WHERE timestamp < ?').run(cutoff);
   }
 
+  // Get average speed from last two snapshots
+  function getRecentSpeed(email) {
+    const row = db.prepare(`
+      SELECT a.up AS up1, a.down AS down1, a.allUp AS allUp1, a.allDown AS allDown1, a.timestamp AS t1,
+             b.up AS up2, b.down AS down2, b.allUp AS allUp2, b.allDown AS allDown2, b.timestamp AS t2
+      FROM traffic_snapshots a
+      JOIN traffic_snapshots b ON a.email = b.email AND a.id > b.id
+      WHERE a.email = ?
+      ORDER BY a.timestamp DESC
+      LIMIT 1
+    `).get(email);
+    if (!row || !row.t2) return null;
+    const dt = row.t1 - row.t2;
+    if (dt <= 0) return null;
+    const delta = trafficDelta(
+      { up: row.up2, down: row.down2, allUp: row.allUp2, allDown: row.allDown2, timestamp: row.t2 },
+      { up: row.up1, down: row.down1, allUp: row.allUp1, allDown: row.allDown1, timestamp: row.t1 }
+    );
+    return { up: delta.up / dt, down: delta.down / dt, intervalSec: dt };
+  }
+
   return {
     insertSnapshot,
     insertSnapshots,
@@ -221,6 +242,7 @@ function createDB(dbPath) {
     hasSnapshotsSince,
     getMonthStart,
     getLastMonthStart,
+    getRecentSpeed,
     cleanup,
     backup(destPath) {
       return db.backup(destPath);

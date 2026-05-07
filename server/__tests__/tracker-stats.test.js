@@ -33,6 +33,7 @@ function loadTracker({ inbounds, latestSnapshot = null, getInboundsError = null 
     getMonthStart: () => 0,
     getLastMonthStart: () => 0,
     getLatestSnapshot: () => latestSnapshot,
+    getRecentSpeed: () => null,
   });
 
   return require('../traffic-tracker');

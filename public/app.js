@@ -101,6 +101,13 @@
     return { value, unit: units[i] };
   }
 
+  function formatSpeed(bytesPerSec) {
+    if (!bytesPerSec || bytesPerSec < 0) return '—';
+    if (bytesPerSec < 1024) return bytesPerSec.toFixed(0) + ' B/s';
+    if (bytesPerSec < 1024 * 1024) return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
+    return (bytesPerSec / 1024 / 1024).toFixed(2) + ' MB/s';
+  }
+
   function formatSplit(totalBytes, up, down) {
     const total = formatBytes(totalBytes);
     const unitIdx = ['B', 'KB', 'MB', 'GB', 'TB'].indexOf(total.unit);
@@ -161,6 +168,16 @@
       html += `<span class="device-limit-hint">上限 ${limitIp} 台</span>`;
     }
     html += `</span>`;
+    // Speed display
+    const avgSpeed = data.avgSpeed;
+    html += '<span class="speed-display" id="speedDisplay">';
+    if (avgSpeed) {
+      html += `<span class="speed-up">↑${formatSpeed(avgSpeed.up)}</span>`;
+      html += `<span class="speed-down">↓${formatSpeed(avgSpeed.down)}</span>`;
+    } else {
+      html += '<span class="speed-up">↑—</span><span class="speed-down">↓—</span>';
+    }
+    html += '</span>';
     html += '</div>';
 
     // Quota progress bar
@@ -301,7 +318,38 @@
     lastData = data;
     currentPeriodDays = 7;
     origRender(data);
+    startSpeedPoll();
   };
+
+  // Real-time speed polling
+  let speedPollTimer = null;
+  let prevCounters = null;
+
+  function startSpeedPoll() {
+    if (speedPollTimer) clearInterval(speedPollTimer);
+    prevCounters = null;
+    speedPollTimer = setInterval(pollSpeed, 5000);
+    pollSpeed(); // immediate first call
+  }
+
+  async function pollSpeed() {
+    try {
+      const res = await fetch(`/api/speed?token=${encodeURIComponent(currentToken)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const now = Date.now();
+      if (prevCounters) {
+        const dt = (now - prevCounters.ts) / 1000;
+        if (dt > 0) {
+          const upSpeed = Math.max(0, data.up - prevCounters.up) / dt;
+          const downSpeed = Math.max(0, data.down - prevCounters.down) / dt;
+          const el = document.getElementById('speedDisplay');
+          if (el) el.innerHTML = `<span class="speed-up">↑${formatSpeed(upSpeed)}</span><span class="speed-down">↓${formatSpeed(downSpeed)}</span>`;
+        }
+      }
+      prevCounters = { up: data.up, down: data.down, ts: now };
+    } catch { /* ignore */ }
+  }
 
   function getCurrentDaily() {
     if (!lastData) return [];
@@ -560,6 +608,7 @@
     localStorage.removeItem('sharev_token');
     location.hash = '';
     if (refreshTimer) clearInterval(refreshTimer);
+    if (speedPollTimer) clearInterval(speedPollTimer);
     showLogin();
   };
 

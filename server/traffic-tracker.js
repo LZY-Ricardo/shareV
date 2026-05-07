@@ -198,6 +198,8 @@ async function getUserStats(email) {
     // ignore
   }
 
+  const avgSpeed = db.getRecentSpeed(email);
+
   return {
     today: todayTraffic,
     month: { up: monthUp, down: monthDown },
@@ -210,6 +212,7 @@ async function getUserStats(email) {
     daily,
     node: nodeInfo,
     configLink,
+    avgSpeed,
   };
 }
 
@@ -246,4 +249,23 @@ function buildConfigLink(inbound, client) {
   }
 }
 
-module.exports = { init, snapshot, ensureTodayBaselineSnapshot, getUserStats };
+async function getLiveCounters(email) {
+  try {
+    const inbounds = await xui.getInbounds();
+    for (const inbound of inbounds) {
+      if (!inbound.clientStats) continue;
+      const client = inbound.clientStats.find(c => c.email === email);
+      if (client) {
+        return {
+          up: client.up || 0,
+          down: client.down || 0,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[tracker] Failed to fetch live counters:', err.message);
+  }
+  return null;
+}
+
+module.exports = { init, snapshot, ensureTodayBaselineSnapshot, getUserStats, getLiveCounters };

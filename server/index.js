@@ -120,6 +120,20 @@ app.get('/api/stats', rateLimiter, async (req, res) => {
   }
 });
 
+// Real-time speed: returns raw counters for frontend to compute speed
+app.get('/api/speed', rateLimiter, async (req, res) => {
+  const user = getUserByToken(req, res);
+  if (!user) return;
+
+  try {
+    const counters = await tracker.getLiveCounters(user.email);
+    if (!counters) return res.status(404).json({ error: '未找到数据' });
+    res.json(counters);
+  } catch (err) {
+    res.status(500).json({ error: '服务暂时不可用' });
+  }
+});
+
 app.get('/api/admin/users', rateLimiter, requireAdmin, async (req, res) => {
   try {
     const users = userDirectory.listUsers(getBaseUrl(req));

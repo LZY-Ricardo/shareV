@@ -624,6 +624,24 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   color: var(--amber);
 }
 
+/* ── Speed Display ── */
+.speed-display {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.speed-up {
+  color: var(--cyan);
+}
+
+.speed-down {
+  color: var(--green);
+}
+
 /* ── Config Panel ── */
 .config-section {
   background: var(--bg-card);
