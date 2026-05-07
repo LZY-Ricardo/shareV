@@ -48,7 +48,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // ── Simple rate limiter (in-memory, per-IP) ──
 const rateLimits = new Map();
 const RATE_WINDOW = 60_000; // 1 minute
-const RATE_MAX = 30;        // max requests per window
+const RATE_MAX = 60;        // max requests per window
 
 function rateLimiter(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress;
@@ -130,6 +130,7 @@ app.get('/api/speed', rateLimiter, async (req, res) => {
     if (!counters) return res.status(404).json({ error: '未找到数据' });
     res.json(counters);
   } catch (err) {
+    console.error('[shareV] Speed error:', err.message);
     res.status(500).json({ error: '服务暂时不可用' });
   }
 });

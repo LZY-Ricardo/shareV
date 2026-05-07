@@ -115,7 +115,7 @@
     const precision = unitIdx > 1 ? 2 : 0;
     const totalNum = parseFloat(total.value);
     const upDisp = (up / div).toFixed(precision);
-    const downDisp = (totalNum - parseFloat(upDisp)).toFixed(precision);
+    const downDisp = (down / div).toFixed(precision);
     return { total, upDisp, downDisp };
   }
 

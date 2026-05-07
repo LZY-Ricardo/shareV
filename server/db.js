@@ -215,7 +215,9 @@ function createDB(dbPath) {
       SELECT a.up AS up1, a.down AS down1, a.allUp AS allUp1, a.allDown AS allDown1, a.timestamp AS t1,
              b.up AS up2, b.down AS down2, b.allUp AS allUp2, b.allDown AS allDown2, b.timestamp AS t2
       FROM traffic_snapshots a
-      JOIN traffic_snapshots b ON a.email = b.email AND a.id > b.id
+      JOIN traffic_snapshots b ON b.email = a.email AND b.id = (
+        SELECT MAX(c.id) FROM traffic_snapshots c WHERE c.email = a.email AND c.id < a.id
+      )
       WHERE a.email = ?
       ORDER BY a.timestamp DESC
       LIMIT 1

@@ -4,6 +4,8 @@ const db = require('./db');
 
 let config = null;
 let snapshotRunning = false; // Mutex to prevent concurrent snapshots
+const counterCache = new Map(); // email -> { data, ts }
+const COUNTER_TTL = 3000; // 3 seconds
 
 function splitAllTimeByCurrentTraffic(up, down, allTime) {
   const currentTotal = up + down;
@@ -250,16 +252,17 @@ function buildConfigLink(inbound, client) {
 }
 
 async function getLiveCounters(email) {
+  const cached = counterCache.get(email);
+  if (cached && Date.now() - cached.ts < COUNTER_TTL) return cached.data;
   try {
     const inbounds = await xui.getInbounds();
     for (const inbound of inbounds) {
       if (!inbound.clientStats) continue;
       const client = inbound.clientStats.find(c => c.email === email);
       if (client) {
-        return {
-          up: client.up || 0,
-          down: client.down || 0,
-        };
+        const data = { up: client.up || 0, down: client.down || 0 };
+        counterCache.set(email, { data, ts: Date.now() });
+        return data;
       }
     }
   } catch (err) {
