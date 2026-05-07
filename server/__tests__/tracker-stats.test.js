@@ -80,7 +80,11 @@ describe('traffic tracker stats', () => {
       protocol: 'vless',
       port: 443,
       settings: JSON.stringify({
-        clients: [{ email: '亮', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+        clients: [{
+          email: '亮',
+          id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3',
+          flow: 'xtls-rprx-vision',
+        }],
       }),
       streamSettings: JSON.stringify({
         realitySettings: {
@@ -99,13 +103,41 @@ describe('traffic tracker stats', () => {
 
     assert.match(profile, /^proxies:\n/);
     assert.match(profile, /type: vless/);
+    assert.match(profile, /\n\s+flow: xtls-rprx-vision/);
     assert.match(profile, /\n\s+encryption: ""/);
     assert.match(profile, /\n\s+packet-encoding: xudp/);
+    assert.match(profile, /\n\s+skip-cert-verify: true/);
     assert.match(profile, /\n\s+smux:\n\s+enabled: false/);
     assert.match(profile, /reality-opts:\n\s+public-key: "pub-key"\n\s+short-id: "abcd"/);
     assert.match(profile, /\nproxy-groups:\n/);
     assert.match(profile, /\n\s+- name: "自动选择"\n\s+type: select\n\s+proxies:\n\s+- "亮"/);
     assert.match(profile, /\nrules:\n\s+- MATCH,自动选择\n?$/);
     assert.doesNotMatch(profile, /undefined/);
+  });
+
+  it('does not force Vision flow when the 3X-UI client has no flow', () => {
+    const tracker = loadTracker({ inbounds: [] });
+    const inbound = {
+      protocol: 'vless',
+      port: 443,
+      settings: JSON.stringify({
+        clients: [{ email: 'Hua', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+      }),
+      streamSettings: JSON.stringify({
+        realitySettings: {
+          serverNames: ['www.microsoft.com'],
+          shortIds: ['abcd'],
+          settings: {
+            publicKey: 'pub-key',
+            fingerprint: 'chrome',
+          },
+        },
+      }),
+    };
+    const client = { email: 'Hua' };
+
+    const profile = tracker.buildClashConfig(inbound, client, { server: 'v.sunandyu.top' });
+
+    assert.doesNotMatch(profile, /\n\s+flow:/);
   });
 });

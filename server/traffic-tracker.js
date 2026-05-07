@@ -228,6 +228,7 @@ function parseVlessReality(inbound, client, cfg = config) {
   const clientCfg = (settings.clients || []).find(c => c.email === client.email);
   const uuid = clientCfg ? clientCfg.id : null;
   if (!uuid) return null;
+  const flow = typeof clientCfg.flow === 'string' ? clientCfg.flow.trim() : '';
 
   const stream = JSON.parse(inbound.streamSettings || '{}');
   const reality = stream.realitySettings || {};
@@ -237,7 +238,7 @@ function parseVlessReality(inbound, client, cfg = config) {
   const fp = reality.settings?.fingerprint || 'chrome';
   if (!pbk || !sni) return null;
 
-  return { uuid, server: cfg.server, port: inbound.port, sni, fp, pbk, sid, email: client.email };
+  return { uuid, server: cfg.server, port: inbound.port, sni, fp, pbk, sid, flow, email: client.email };
 }
 
 function buildConfigLink(inbound, client) {
@@ -252,6 +253,7 @@ function buildConfigLink(inbound, client) {
       `fp=${encodeURIComponent(f.fp)}`,
       `pbk=${encodeURIComponent(f.pbk)}`,
       `sid=${encodeURIComponent(f.sid)}`,
+      ...(f.flow ? [`flow=${encodeURIComponent(f.flow)}`] : []),
       'type=tcp',
     ].join('&');
 
@@ -284,9 +286,10 @@ function buildClashConfig(inbound, client, cfg = config) {
       '    udp: true',
       '    packet-encoding: xudp',
       '    tls: true',
-      '    flow: xtls-rprx-vision',
+      ...(f.flow ? [`    flow: ${f.flow}`] : []),
       `    servername: ${yamlQuote(f.sni)}`,
       `    client-fingerprint: ${yamlQuote(f.fp)}`,
+      '    skip-cert-verify: true',
       '    reality-opts:',
       `      public-key: ${yamlQuote(f.pbk)}`,
       `      short-id: ${yamlQuote(f.sid)}`,
