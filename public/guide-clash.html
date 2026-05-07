@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>shareV // Clash 导入教程</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#06080e">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="guide-body">
+  <div class="grid-bg"></div>
+  <div class="scanline"></div>
+
+  <div class="container guide-container">
+    <header class="header guide-header">
+      <div class="logo-mark">
+        <span class="logo-bracket">[</span>
+        <span class="logo-text">Clash 导入教程</span>
+        <span class="logo-bracket">]</span>
+      </div>
+      <div class="subtitle" id="guideSubtitle">从安装 Clash Verge 到导入订阅，一步一步带你完成</div>
+    </header>
+
+    <main id="guideContent" class="guide-content">
+      <section class="guide-hero">
+        <div class="guide-hero-copy">
+          <div class="guide-kicker">Clash Verge Rev</div>
+          <h1>把节点导入到 Clash Verge 里</h1>
+          <p>这页专门讲解如何通过订阅链接把节点导入 Clash Verge Rev。Clash Verge 适合 Windows / Mac / Linux 用户，界面美观，支持订阅管理和规则切换。</p>
+          <div class="guide-actions-row">
+            <button class="config-clash-btn" onclick="copyGuideLink()">复制当前订阅链接</button>
+            <a class="config-help-btn guide-link-btn" href="/" id="backToDashboard">回到流量页</a>
+          </div>
+        </div>
+        <aside class="guide-hero-card">
+          <div class="guide-side-title">开始前准备</div>
+          <ul class="guide-checklist">
+            <li>先保持这个教程页和你的 shareV 流量页都开着</li>
+            <li>当前订阅链接和二维码会显示在本页底部</li>
+            <li>推荐使用 Clash Verge Rev（社区维护版），不要用已停更的旧版 Clash for Windows</li>
+          </ul>
+          <div class="guide-link-box" id="guideLinkBox">等待读取当前订阅链接...</div>
+        </aside>
+      </section>
+
+      <section class="guide-section">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Step 1</div>
+          <h2>下载并安装 Clash Verge Rev</h2>
+          <p>Clash Verge Rev 是目前最活跃的 Clash 图形客户端，支持 Windows / Mac / Linux。</p>
+        </div>
+        <div class="platform-grid">
+          <article class="platform-card is-featured">
+            <div class="platform-badge">Windows / Mac / Linux</div>
+            <h3>Clash Verge Rev</h3>
+            <p>社区维护版，持续更新，界面美观。下面的教程全部基于这个客户端。</p>
+            <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases/latest" target="_blank" rel="noopener">打开官方发布页</a>
+          </article>
+          <article class="platform-card">
+            <div class="platform-badge">Android</div>
+            <h3>Clash Meta for Android</h3>
+            <p>安卓上的 Clash 内核客户端，同样支持订阅导入。</p>
+            <a href="https://github.com/MetaCubeX/ClashMetaForAndroid/releases/latest" target="_blank" rel="noopener">打开官方发布页</a>
+          </article>
+          <article class="platform-card">
+            <div class="platform-badge">iOS</div>
+            <h3>Stash</h3>
+            <p>iOS 上支持 Clash 订阅格式的客户端，可在 App Store 购买。</p>
+            <a href="https://apps.apple.com/us/app/stash-rule-based-proxy/id1596063349" target="_blank" rel="noopener">打开 App Store</a>
+          </article>
+          <article class="platform-card">
+            <div class="platform-badge">不想装客户端？</div>
+            <h3>用 v2rayN</h3>
+            <p>v2rayN 也支持 VLESS 链接导入，不需要走 Clash 订阅。回到 shareV 切换到 VLESS 标签页。</p>
+            <a href="/guide.html" target="_blank" rel="noopener">打开 v2rayN 教程</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="guide-section guide-windows">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Step 2</div>
+          <h2>Clash Verge Rev 完整导入教程</h2>
+          <p>跟着下面的步骤做，每一步都有截图对照。你不需要理解订阅原理，照着点就行。</p>
+        </div>
+
+        <div class="guide-steps">
+          <article class="step-card">
+            <div class="step-no">01</div>
+            <div class="step-copy">
+              <h3>下载并安装 Clash Verge Rev</h3>
+              <p>打开上面的官方发布页，根据你的系统下载对应的安装包：</p>
+              <ul style="padding-left:18px;line-height:1.85;color:#b2bccd;font-size:14px;">
+                <li><strong style="color:var(--text-bright)">Windows</strong>：下载 <code>.msi</code> 安装包，双击安装</li>
+                <li><strong style="color:var(--text-bright)">Mac (Apple Silicon)</strong>：下载 <code>.dmg</code> (aarch) 版本</li>
+                <li><strong style="color:var(--text-bright)">Mac (Intel)</strong>：下载 <code>.dmg</code> (x86) 版本</li>
+              </ul>
+              <div class="step-tip">安装完成后首次打开，如果系统提示"无法验证开发者"，请到系统设置 → 安全性中手动允许打开。</div>
+            </div>
+            <img class="step-image" src="/guide-assets/clash-verge-download.png" alt="Clash Verge Rev 发布页下载区域">
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">02</div>
+            <div class="step-copy">
+              <h3>打开 Clash Verge，看到主界面</h3>
+              <p>安装完成后打开 Clash Verge Rev。首次打开会看到如下主界面，左侧是导航栏。</p>
+            </div>
+            <img class="step-image" src="/guide-assets/clash-verge-main.png" alt="Clash Verge Rev 主界面">
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">03</div>
+            <div class="step-copy">
+              <h3>回到 shareV，复制订阅链接</h3>
+              <p>回到你的 shareV 页面，在"连接配置"区域，确保你切换到了 <code>Clash</code> 标签页，然后点击 <strong>"复制订阅"</strong> 按钮。</p>
+              <div class="step-tip">注意：一定要在 <code>Clash</code> 标签页里复制，不是 VLESS 标签页。VLESS 链接不能直接在 Clash 里使用。</div>
+            </div>
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">04</div>
+            <div class="step-copy">
+              <h3>在 Clash Verge 中添加订阅</h3>
+              <p>回到 Clash Verge，点击左侧栏的 <strong>"订阅"（Profiles）</strong> 页面。在顶部你会看到一个输入框，把刚才复制的订阅链接粘贴进去。</p>
+            </div>
+            <img class="step-image" src="/guide-assets/clash-verge-profile-url.png" alt="Clash Verge 订阅页面粘贴链接">
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">05</div>
+            <div class="step-copy">
+              <h3>点击导入，等待订阅更新</h3>
+              <p>粘贴链接后，点击旁边的 <strong>"导入"</strong> 按钮。Clash Verge 会自动下载订阅配置。完成后，订阅会出现在列表中，显示为一个卡片。</p>
+              <div class="step-tip">如果导入失败，检查网络是否通畅，以及订阅链接是否完整（链接很长，确保没有被截断）。</div>
+            </div>
+            <img class="step-image" src="/guide-assets/clash-verge-profile-imported.png" alt="Clash Verge 订阅导入成功">
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">06</div>
+            <div class="step-copy">
+              <h3>选中订阅配置</h3>
+              <p>在订阅列表中，点击刚刚导入的配置卡片使其高亮选中（会有一个选中标记）。这表示当前正在使用这个配置。</p>
+            </div>
+            <img class="step-image" src="/guide-assets/clash-verge-profile-selected.png" alt="Clash Verge 选中订阅配置">
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">07</div>
+            <div class="step-copy">
+              <h3>开启系统代理</h3>
+              <p>点击左侧栏回到 <strong>"设置"（Settings）</strong> 页面，找到 <strong>"系统代理"（System Proxy）</strong> 开关，打开它。</p>
+              <div class="step-tip">打开系统代理后，Clash Verge 会自动接管系统网络流量并按规则分流。你也可以点击左侧的"代理"页面来选择具体的节点和代理模式（规则/全局/直连）。</div>
+            </div>
+            <img class="step-image" src="/guide-assets/clash-verge-system-proxy.png" alt="Clash Verge 开启系统代理">
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">08</div>
+            <div class="step-copy">
+              <h3>选择代理模式和节点</h3>
+              <p>点击左侧栏的 <strong>"代理"（Proxies）</strong> 页面。你可以在这里：</p>
+              <ul style="padding-left:18px;line-height:1.85;color:#b2bccd;font-size:14px;">
+                <li><strong style="color:var(--text-bright)">规则模式（Rule）</strong>：推荐，国内网站直连，国外网站走代理</li>
+                <li><strong style="color:var(--text-bright)">全局模式（Global）</strong>：所有流量都走代理</li>
+                <li>在节点列表中选择你要使用的节点</li>
+              </ul>
+            </div>
+            <img class="step-image" src="/guide-assets/clash-verge-proxies.png" alt="Clash Verge 代理选择界面">
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">09</div>
+            <div class="step-copy">
+              <h3>验证是否成功</h3>
+              <p>连接后，打开浏览器访问 <a href="https://www.google.com" target="_blank" rel="noopener" style="color:var(--cyan)">Google</a> 或其他平时打不开的网站。也可以回到 shareV 页面，看流量是否在变化。</p>
+              <div class="step-tip">如果打不开网页，检查：1）系统代理是否已开启；2）节点是否过期；3）回到 shareV 看是否显示在线。</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="guide-section">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Step 3</div>
+          <h2>手机端怎么导入 Clash 订阅</h2>
+          <p>Android 和 iOS 也支持 Clash 订阅格式，操作方式类似。</p>
+        </div>
+
+        <div class="platform-guide-list">
+          <article class="platform-guide-card">
+            <h3>Android · Clash Meta</h3>
+            <ol>
+              <li>从上面的发布页下载安装 Clash Meta for Android。</li>
+              <li>打开 app，进入"配置"（Profile）页面。</li>
+              <li>点击右下角 + 号，选择"从 URL 导入"。</li>
+              <li>回到 shareV，在 Clash 标签页复制订阅链接，粘贴到 URL 输入框中。</li>
+              <li>点击"更新"下载配置，完成后点击选中这个配置。</li>
+              <li>回到首页，点击启动按钮开启 VPN 连接。</li>
+              <li>打开浏览器测试是否正常。</li>
+            </ol>
+          </article>
+
+          <article class="platform-guide-card">
+            <h3>iPhone · Stash</h3>
+            <ol>
+              <li>从 App Store 安装 Stash。</li>
+              <li>第一次打开时允许 VPN 权限提示。</li>
+              <li>回到 shareV，在 Clash 标签页复制订阅链接。</li>
+              <li>在 Stash 中，进入"配置"页面，选择"从 URL 下载"。</li>
+              <li>粘贴订阅链接并下载，选中该配置。</li>
+              <li>回到首页，打开连接开关。</li>
+              <li>浏览网页确认是否已经能正常使用。</li>
+            </ol>
+          </article>
+
+          <article class="platform-guide-card">
+            <h3>通用方法：扫码导入</h3>
+            <ol>
+              <li>在 shareV 的 Clash 标签页展开"连接配置"。</li>
+              <li>找到二维码，用手机的 Clash 客户端扫描。</li>
+              <li>扫码后会自动填入订阅链接，确认导入。</li>
+              <li>选中配置并启动连接。</li>
+            </ol>
+          </article>
+        </div>
+      </section>
+
+      <section class="guide-section">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Step 4</div>
+          <h2>订阅更新和常见问题</h2>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-card">
+            <h3>怎么更新订阅配置</h3>
+            <p>在 Clash Verge 的"订阅"页面，找到你的订阅卡片，点击上面的刷新按钮即可重新拉取最新配置。建议在管理员修改节点信息后更新一次。</p>
+          </article>
+          <article class="faq-card">
+            <h3>导入订阅后节点列表为空</h3>
+            <p>可能是订阅链接过期或配置格式不匹配。回到 shareV 重新复制最新的订阅链接再试。确保你在 Clash 标签页复制的，不是 VLESS 标签页。</p>
+          </article>
+          <article class="faq-card">
+            <h3>Clash Verge 点了"导入 Clash Verge"没反应</h3>
+            <p>这个按钮依赖 <code>clash://</code> 协议注册。如果没反应，没关系，直接手动打开 Clash Verge，在订阅页面粘贴链接导入即可。</p>
+          </article>
+          <article class="faq-card">
+            <h3>开了系统代理但上不了网</h3>
+            <p>检查以下几点：1）订阅是否导入成功（订阅列表里有内容）；2）是否选中了订阅配置；3）节点是否过期（看 shareV 是否显示在线）；4）试试切换到"全局模式"排查。</p>
+          </article>
+          <article class="faq-card">
+            <h3>Clash Verge 和 v2rayN 我该用哪个</h3>
+            <p>两个都能用。v2rayN 支持直接粘贴 VLESS 链接，操作更简单；Clash Verge 支持订阅管理、规则分流、多节点切换，功能更强大。按自己喜好选择。</p>
+          </article>
+          <article class="faq-card">
+            <h3>VLESS 链接能直接在 Clash 里用吗</h3>
+            <p>不能。VLESS 链接（<code>vless://...</code>）是给 v2rayN 等客户端用的。Clash 系客户端需要用订阅 URL（就是你在 Clash 标签页复制的那个链接）。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="guide-section guide-bottom-link">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Current Subscription</div>
+          <h2>当前订阅链接也能在这里直接拿</h2>
+        </div>
+        <div class="guide-current-link-card">
+          <div class="guide-link-box guide-link-box--large" id="guideLinkPanel">还没读取到当前订阅链接</div>
+          <div class="guide-actions-row">
+            <button class="config-clash-btn" onclick="copyGuideLink()">复制当前订阅链接</button>
+          </div>
+          <div class="qr-container" id="guideQrContainer"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="footer-dim">SYS::SHAREV GUIDE</span>
+      <span class="footer-sep"> ─ </span>
+      <span class="footer-dim">CLASH</span>
+    </footer>
+  </div>
+
+  <script src="/qrious.min.js"></script>
+  <script src="/guide-clash.js"></script>
+</body>
+</html>
