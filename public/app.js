@@ -102,7 +102,7 @@
   }
 
   function formatSpeed(bytesPerSec) {
-    if (!bytesPerSec || bytesPerSec < 0) return '—';
+    if (!bytesPerSec || bytesPerSec < 0) bytesPerSec = 0;
     if (bytesPerSec < 1024) return bytesPerSec.toFixed(0) + ' B/s';
     if (bytesPerSec < 1024 * 1024) return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
     return (bytesPerSec / 1024 / 1024).toFixed(2) + ' MB/s';
@@ -156,28 +156,28 @@
     if (node.remark) {
       html += `<span class="node-name">${esc(node.remark)}</span>`;
     }
-    html += `<span class="device-count" onclick="toggleDevices()">`;
     const limitIp = node.limitIp || 0;
     if (online && devices > 0) {
+      html += `<span class="device-count" onclick="toggleDevices()">`;
       const atLimit = limitIp > 0 && devices >= limitIp;
       html += `<span class="dot online"></span>`;
       html += `<span class="${atLimit ? 'device-at-limit' : ''}">${devices} 台设备</span>`;
       html += ` <span class="expand-arrow" id="deviceArrow">▶</span>`;
-    }
-    if (limitIp > 0) {
+      if (limitIp > 0) {
+        html += `<span class="device-limit-hint">上限 ${limitIp} 台</span>`;
+      }
+      html += `</span>`;
+    } else if (limitIp > 0) {
       html += `<span class="device-limit-hint">上限 ${limitIp} 台</span>`;
     }
-    html += `</span>`;
     html += '</div>';
     // Row 2: speed
     const avgSpeed = data.avgSpeed;
+    const initUp = avgSpeed ? avgSpeed.up : 0;
+    const initDown = avgSpeed ? avgSpeed.down : 0;
     html += '<div class="node-bar-speed" id="speedDisplay">';
-    if (avgSpeed) {
-      html += `<span class="speed-up">↑ ${formatSpeed(avgSpeed.up)}</span>`;
-      html += `<span class="speed-down">↓ ${formatSpeed(avgSpeed.down)}</span>`;
-    } else {
-      html += '<span class="speed-up">↑ —</span><span class="speed-down">↓ —</span>';
-    }
+    html += `<span class="speed-up${initUp ? '' : ' idle'}">↑ ${formatSpeed(initUp)}</span>`;
+    html += `<span class="speed-down${initDown ? '' : ' idle'}">↓ ${formatSpeed(initDown)}</span>`;
     html += '</div>';
     html += '</div>';
 
