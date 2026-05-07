@@ -259,9 +259,15 @@
       html += `<input type="text" class="config-link" id="configInput" value="${esc(data.configLink)}" readonly onclick="this.select()" />`;
       html += '<div class="config-actions">';
       html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
+      if (data.clashConfig) {
+        html += '<button class="config-clash-btn" onclick="copyClashConfig()">复制 Clash 配置</button>';
+      }
       html += '<button class="config-import-btn" onclick="importToV2RayN()">导入 v2rayN</button>';
       html += '<button class="config-help-btn" onclick="toggleImportGuide()">注册协议教程</button>';
       html += '</div>';
+      if (data.clashConfig) {
+        html += `<textarea class="sr-only" id="clashConfigArea" readonly>${esc(data.clashConfig)}</textarea>`;
+      }
       html += '<div class="config-guide" id="configGuide" style="display:none">';
       html += '<div class="guide-title">v2rayN 导入与协议注册</div>';
       html += '<div class="guide-step">1. 先点“导入 v2rayN”。如果客户端已注册 `v2rayn://` 协议，会自动弹起导入。</div>';
@@ -274,7 +280,7 @@
       html += '<div class="guide-note">执行后重启 v2rayN，再回来点“导入 v2rayN”即可。</div>';
       html += '</div>';
       html += '<div class="qr-container" id="qrContainer"></div>';
-      html += '<div class="config-hint">可直接导入 v2rayN；如果未自动打开，也可以复制链接或扫描二维码导入 · <a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener" class="config-dl">下载 v2rayN</a></div>';
+      html += '<div class="config-hint">可直接导入 v2rayN；Clash Verge 用户请点击"复制 Clash 配置" · 也可以扫描二维码导入 · <a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener" class="config-dl">下载 v2rayN</a> · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
       html += '</div>';
       html += '</div>';
     }
@@ -538,6 +544,15 @@
     }).catch(() => {});
   };
 
+  window.copyClashConfig = function () {
+    const area = document.getElementById('clashConfigArea');
+    if (!area) return;
+    navigator.clipboard.writeText(area.value).then(() => {
+      const btn = document.querySelector('.config-clash-btn');
+      if (btn) { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制 Clash 配置', 1500); }
+    }).catch(() => {});
+  };
+
   window.importToV2RayN = async function () {
     const input = document.getElementById('configInput');
     if (!input || !input.value) return;
@@ -631,18 +646,17 @@
 
   // QR code generator using QRious library
   function generateQR(text) {
-    const size = 140;
+    const renderSize = 512; // render large for accuracy, CSS scales to 140px
     const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = renderSize;
+    canvas.height = renderSize;
     new QRious({
       element: canvas,
       value: text,
-      size: size,
+      size: renderSize,
       level: 'M',
       foreground: '#000000',
-      backgroundAlpha: 0,
-      padding: 0,
+      background: '#ffffff',
     });
     return `<img src="${canvas.toDataURL()}" alt="QR Code" class="qr-img" />`;
   }

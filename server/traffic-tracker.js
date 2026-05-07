@@ -121,6 +121,7 @@ async function getUserStats(email) {
   let monthUp = 0, monthDown = 0;
   let nodeInfo = null;
   let configLink = null;
+  let clashConfig = null;
 
   const daily = db.getDailyTraffic(email, 30);
 
@@ -160,8 +161,9 @@ async function getUserStats(email) {
       limitIp,
     };
 
-    // Generate VLESS config link
+    // Generate VLESS config link and Clash YAML
     configLink = buildConfigLink(liveInbound, liveClient);
+    clashConfig = buildClashConfig(liveInbound, liveClient);
   }
 
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
@@ -214,38 +216,75 @@ async function getUserStats(email) {
     daily,
     node: nodeInfo,
     configLink,
+    clashConfig,
     avgSpeed,
   };
 }
 
-function buildConfigLink(inbound, client) {
+// Parse inbound+client into fields shared by vless:// link and Clash YAML
+function parseVlessReality(inbound, client) {
   if (!config || !config.server || inbound.protocol !== 'vless') return null;
-  try {
-    // Get UUID from inbound.settings.clients (clientStats doesn't have it)
-    const settings = JSON.parse(inbound.settings || '{}');
-    const clientCfg = (settings.clients || []).find(c => c.email === client.email);
-    const uuid = clientCfg ? clientCfg.id : null;
-    if (!uuid) return null;
+  const settings = JSON.parse(inbound.settings || '{}');
+  const clientCfg = (settings.clients || []).find(c => c.email === client.email);
+  const uuid = clientCfg ? clientCfg.id : null;
+  if (!uuid) return null;
 
-    const stream = JSON.parse(inbound.streamSettings || '{}');
-    const reality = stream.realitySettings || {};
-    const pbk = reality.settings?.publicKey;
-    const sni = (reality.serverNames || [])[0];
-    const sid = (reality.shortIds || [])[0];
-    const fp = reality.settings?.fingerprint || 'chrome';
-    if (!pbk || !sni) return null;
+  const stream = JSON.parse(inbound.streamSettings || '{}');
+  const reality = stream.realitySettings || {};
+  const pbk = reality.settings?.publicKey;
+  const sni = (reality.serverNames || [])[0];
+  const sid = (reality.shortIds || [])[0];
+  const fp = reality.settings?.fingerprint || 'chrome';
+  if (!pbk || !sni) return null;
+
+  return { uuid, server: config.server, port: inbound.port, sni, fp, pbk, sid, email: client.email };
+}
+
+function buildConfigLink(inbound, client) {
+  try {
+    const f = parseVlessReality(inbound, client);
+    if (!f) return null;
 
     const params = [
       'encryption=none',
       'security=reality',
-      `sni=${encodeURIComponent(sni)}`,
-      `fp=${encodeURIComponent(fp)}`,
-      `pbk=${encodeURIComponent(pbk)}`,
-      `sid=${encodeURIComponent(sid)}`,
+      `sni=${encodeURIComponent(f.sni)}`,
+      `fp=${encodeURIComponent(f.fp)}`,
+      `pbk=${encodeURIComponent(f.pbk)}`,
+      `sid=${encodeURIComponent(f.sid)}`,
       'type=tcp',
     ].join('&');
 
-    return `vless://${uuid}@${config.server}:${inbound.port}?${params}#${encodeURIComponent(client.email)}`;
+    return `vless://${f.uuid}@${f.server}:${f.port}?${params}#${encodeURIComponent(f.email)}`;
+  } catch {
+    return null;
+  }
+}
+
+// Generate mihomo (Clash Meta) proxy YAML for VLESS+Reality+Vision
+function buildClashConfig(inbound, client) {
+  try {
+    const f = parseVlessReality(inbound, client);
+    if (!f) return null;
+
+    const lines = [
+      'proxies:',
+      `  - name: "${f.email}"`,
+      '    type: vless',
+      `    server: ${f.server}`,
+      `    port: ${f.port}`,
+      `    uuid: ${f.uuid}`,
+      '    network: tcp',
+      '    udp: true',
+      '    tls: true',
+      '    flow: xtls-rprx-vision',
+      `    servername: ${f.sni}`,
+      `    client-fingerprint: ${f.fp}`,
+      '    reality-opts:',
+      `      public-key: ${f.pbk}`,
+      `      short-id: ${f.sid}`,
+    ];
+    return lines.join('\n');
   } catch {
     return null;
   }
