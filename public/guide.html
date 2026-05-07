@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>shareV // 导入教程</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#06080e">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="guide-body">
+  <div class="grid-bg"></div>
+  <div class="scanline"></div>
+
+  <div class="container guide-container">
+    <header class="header guide-header">
+      <div class="logo-mark">
+        <span class="logo-bracket">[</span>
+        <span class="logo-text">导入教程</span>
+        <span class="logo-bracket">]</span>
+      </div>
+      <div class="subtitle" id="guideSubtitle">从安装客户端到导入成功，一步一步带你完成</div>
+    </header>
+
+    <main id="guideContent" class="guide-content">
+      <section class="guide-hero">
+        <div class="guide-hero-copy">
+          <div class="guide-kicker">Beginner Friendly</div>
+          <h1>把节点导入到你的设备里</h1>
+          <p>这页是给第一次接触代理客户端的小白准备的。你只需要按顺序做，不需要理解协议原理。</p>
+          <div class="guide-actions-row">
+            <button class="config-copy-btn" onclick="copyGuideLink()">复制当前连接链接</button>
+            <a class="config-help-btn guide-link-btn" href="/" id="backToDashboard">回到流量页</a>
+          </div>
+        </div>
+        <aside class="guide-hero-card">
+          <div class="guide-side-title">开始前准备</div>
+          <ul class="guide-checklist">
+            <li>先保持这个教程页和你的 shareV 流量页都开着</li>
+            <li>Windows 用户优先看 v2rayN 教程</li>
+            <li>当前连接链接和二维码会显示在本页底部</li>
+          </ul>
+          <div class="guide-link-box" id="guideLinkBox">等待读取当前连接链接...</div>
+        </aside>
+      </section>
+
+      <section class="guide-section">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Step 1</div>
+          <h2>先下载适合你设备的软件</h2>
+          <p>不会选的话，照着下面推荐装就行。所有入口都指向官方项目页或官方分发页。</p>
+        </div>
+        <div class="platform-grid">
+          <article class="platform-card is-featured">
+            <div class="platform-badge">Windows 推荐</div>
+            <h3>v2rayN</h3>
+            <p>最适合 Windows 新手，和这页教程完全对应。</p>
+            <a href="https://github.com/2dust/v2rayN/releases/latest" target="_blank" rel="noopener">打开官方发布页</a>
+          </article>
+          <article class="platform-card">
+            <div class="platform-badge">Android</div>
+            <h3>v2rayNG</h3>
+            <p>安卓常用客户端，复制链接或扫码都可以导入。</p>
+            <a href="https://github.com/2dust/v2rayNG/releases/latest" target="_blank" rel="noopener">打开官方发布页</a>
+          </article>
+          <article class="platform-card">
+            <div class="platform-badge">iPhone</div>
+            <h3>Shadowrocket</h3>
+            <p>iPhone 常见选择。安装后可通过剪贴板或扫码导入。</p>
+            <a href="https://apps.apple.com/us/app/shadowrocket/id932747118" target="_blank" rel="noopener">打开 App Store</a>
+          </article>
+          <article class="platform-card">
+            <div class="platform-badge">Mac</div>
+            <h3>V2rayU</h3>
+            <p>Mac 上较常见，支持粘贴链接导入。</p>
+            <a href="https://github.com/yanue/V2rayU/releases/latest" target="_blank" rel="noopener">打开官方发布页</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="guide-section guide-windows">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Step 2</div>
+          <h2>Windows：用 v2rayN 完整导入</h2>
+          <p>下面这套流程最完整，也是你现在最推荐走的路线。</p>
+        </div>
+
+        <div class="guide-steps">
+          <article class="step-card">
+            <div class="step-no">01</div>
+            <div class="step-copy">
+              <h3>下载并解压 v2rayN</h3>
+              <p>打开上面的官方发布页，下载 Windows 版本压缩包。下载完成后，右键解压到一个你容易找到的位置，例如桌面或下载目录。</p>
+              <div class="step-tip">你不需要安装程序，解压后直接运行里面的 <code>v2rayN.exe</code> 即可。</div>
+            </div>
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">02</div>
+            <div class="step-copy">
+              <h3>打开 v2rayN，看见主界面</h3>
+              <p>双击 <code>v2rayN.exe</code>，出现下面这个窗口就说明软件已经打开成功了。</p>
+            </div>
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">03</div>
+            <div class="step-copy">
+              <h3>回到 shareV，复制当前连接链接</h3>
+              <p>回到你的 shareV 页面，点“复制链接”或“复制并打开 v2rayN”。</p>
+              <div class="step-tip">“复制并打开 v2rayN”只负责复制链接并打开软件，不代表一定会自动导入。真正稳定的导入动作，仍然是在 v2rayN 里按 <code>Ctrl+V</code>。</div>
+            </div>
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">04</div>
+            <div class="step-copy">
+              <h3>回到 v2rayN，按 Ctrl+V 导入</h3>
+              <p>切回 v2rayN，直接按键盘 <code>Ctrl+V</code>。导入成功后，节点会出现在列表里。</p>
+            </div>
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">05</div>
+            <div class="step-copy">
+              <h3>选中节点并开始连接</h3>
+              <p>节点出现后，保持它被选中。然后点击右上角的启动/连接相关按钮，启用代理。</p>
+              <div class="step-tip">如果你看到节点名称、服务器地址、端口这些信息已经出现在列表里，就说明导入这一步已经成功了。</div>
+            </div>
+            <img class="step-image" src="/guide-assets/v2rayn-connect-area.png" alt="v2rayN 连接区域截图">
+          </article>
+
+          <article class="step-card">
+            <div class="step-no">06</div>
+            <div class="step-copy">
+              <h3>验证是否成功</h3>
+              <p>连接后，打开浏览器访问你平时打不开的网站，或者刷新 shareV 看流量是否变化。只要客户端状态正常、网页能访问，说明已经成功。</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="guide-section">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Step 3</div>
+          <h2>Android / iPhone / Mac 怎么导入</h2>
+          <p>这些平台首版先给你最稳妥的简明步骤，不要求你会看高级设置。</p>
+        </div>
+
+        <div class="platform-guide-list">
+          <article class="platform-guide-card">
+            <h3>Android · v2rayNG</h3>
+            <ol>
+              <li>打开上面的官方发布页下载安装 APK。</li>
+              <li>安装完成后，先打开 v2rayNG。</li>
+              <li>回到 shareV，复制当前连接链接，或者直接扫描二维码。</li>
+              <li>回到 v2rayNG，使用“从剪贴板导入”或扫码导入。</li>
+              <li>选中节点并启动连接。</li>
+              <li>打开浏览器测试是否能正常联网。</li>
+            </ol>
+          </article>
+
+          <article class="platform-guide-card">
+            <h3>iPhone · Shadowrocket</h3>
+            <ol>
+              <li>从 App Store 安装 Shadowrocket。</li>
+              <li>第一次打开时允许必要的 VPN 权限提示。</li>
+              <li>回到 shareV，复制当前连接链接或扫描二维码。</li>
+              <li>回到 Shadowrocket，通过剪贴板导入或扫码导入。</li>
+              <li>导入后打开顶部连接开关。</li>
+              <li>浏览网页确认是否已经能正常使用。</li>
+            </ol>
+          </article>
+
+          <article class="platform-guide-card">
+            <h3>Mac · V2rayU</h3>
+            <ol>
+              <li>从上面的官方发布页下载安装并打开 V2rayU。</li>
+              <li>回到 shareV，复制当前连接链接。</li>
+              <li>在 V2rayU 中导入剪贴板里的节点链接。</li>
+              <li>选中刚导入的节点并启用系统代理。</li>
+              <li>打开浏览器测试网站是否正常访问。</li>
+            </ol>
+          </article>
+        </div>
+      </section>
+
+      <section class="guide-section">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Step 4</div>
+          <h2>导入失败怎么办</h2>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-card">
+            <h3>点了“复制链接”但提示复制失败</h3>
+            <p>通常是浏览器没拿到剪贴板权限。你可以手动点击输入框，全选后复制。</p>
+          </article>
+          <article class="faq-card">
+            <h3>点了“复制并打开 v2rayN”只打开软件，没有自动导入</h3>
+            <p>这是正常情况。当前最稳的方式仍然是打开 v2rayN 后按 <code>Ctrl+V</code> 导入。</p>
+          </article>
+          <article class="faq-card">
+            <h3>扫码没反应</h3>
+            <p>先确认客户端支持扫码导入。如果扫不出来，直接复制链接导入通常更稳定。</p>
+          </article>
+          <article class="faq-card">
+            <h3>节点导入成功但还是上不了网</h3>
+            <p>先确认你已经真正启动连接，并打开了系统代理/VPN 开关。其次检查节点是否过期，或者回到 shareV 看是否显示在线。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="guide-section guide-advanced">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Advanced</div>
+          <h2>如果你想点网页后直接打开 v2rayN</h2>
+          <p>这是进阶增强，不是必做项。没做也不影响你通过复制链接正常导入。</p>
+        </div>
+        <div class="advanced-box">
+          <p>把下面的命令复制到 Windows PowerShell 里执行。执行前先把第一行的 <code>v2rayN.exe</code> 路径改成你电脑上的真实路径。</p>
+          <textarea class="guide-code" readonly onclick="this.select()" id="guideCode">$exe = 'C:\Users\Hua\Downloads\v2rayN-windows-64-SelfContained\v2rayN-windows-64-SelfContained\v2rayN.exe'
+
+New-Item -Path 'HKCU:\Software\Classes\v2rayn' -Force | Out-Null
+Set-ItemProperty -Path 'HKCU:\Software\Classes\v2rayn' -Name '(default)' -Value 'URL:v2rayN Protocol'
+New-ItemProperty -Path 'HKCU:\Software\Classes\v2rayn' -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null
+
+New-Item -Path 'HKCU:\Software\Classes\v2rayn\DefaultIcon' -Force | Out-Null
+Set-ItemProperty -Path 'HKCU:\Software\Classes\v2rayn\DefaultIcon' -Name '(default)' -Value "$exe,0"
+
+New-Item -Path 'HKCU:\Software\Classes\v2rayn\shell\open\command' -Force | Out-Null
+Set-ItemProperty -Path 'HKCU:\Software\Classes\v2rayn\shell\open\command' -Name '(default)' -Value "`"$exe`" `"%1`""</textarea>
+          <div class="guide-actions-row">
+            <button class="guide-copy-btn" onclick="copyGuideCode()">复制命令</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="guide-section guide-bottom-link">
+        <div class="guide-section-head">
+          <div class="guide-eyebrow">Current Link</div>
+          <h2>当前这条连接也能在这里直接拿</h2>
+        </div>
+        <div class="guide-current-link-card">
+          <div class="guide-link-box guide-link-box--large" id="guideLinkPanel">还没读取到当前连接链接</div>
+          <div class="guide-actions-row">
+            <button class="config-copy-btn" onclick="copyGuideLink()">复制当前连接链接</button>
+          </div>
+          <div class="qr-container" id="guideQrContainer"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="footer-dim">SYS::SHAREV GUIDE</span>
+      <span class="footer-sep"> ─ </span>
+      <span class="footer-dim">v1.0.0</span>
+    </footer>
+  </div>
+
+  <script src="/qrious.min.js"></script>
+  <script src="/guide.js"></script>
+</body>
+</html>
