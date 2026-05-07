@@ -363,6 +363,21 @@
     pollSpeed(); // immediate first call
   }
 
+  function updateSpeedDisplay(upSpeed, downSpeed) {
+    const el = document.getElementById('speedDisplay');
+    if (!el) return;
+    const upEl = el.querySelector('.speed-up');
+    const downEl = el.querySelector('.speed-down');
+    if (upEl) {
+      upEl.textContent = `↑ ${formatSpeed(upSpeed)}`;
+      upEl.classList.toggle('idle', !upSpeed);
+    }
+    if (downEl) {
+      downEl.textContent = `↓ ${formatSpeed(downSpeed)}`;
+      downEl.classList.toggle('idle', !downSpeed);
+    }
+  }
+
   async function pollSpeed() {
     try {
       const res = await fetch(`/api/speed?token=${encodeURIComponent(currentToken)}`);
@@ -374,14 +389,11 @@
         if (dt > 0) {
           const upSpeed = Math.max(0, data.up - prevCounters.up) / dt;
           const downSpeed = Math.max(0, data.down - prevCounters.down) / dt;
-          const el = document.getElementById('speedDisplay');
-          if (el) {
-            const upEl = el.querySelector('.speed-up');
-            const downEl = el.querySelector('.speed-down');
-            if (upEl) upEl.textContent = `↑ ${formatSpeed(upSpeed)}`;
-            if (downEl) downEl.textContent = `↓ ${formatSpeed(downSpeed)}`;
-          }
+          updateSpeedDisplay(upSpeed, downSpeed);
         }
+      } else {
+        // First poll: show 0 B/s baseline immediately
+        updateSpeedDisplay(0, 0);
       }
       prevCounters = { up: data.up, down: data.down, ts: now };
     } catch { /* ignore */ }

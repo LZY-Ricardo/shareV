@@ -664,6 +664,11 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   color: var(--green);
 }
 
+.speed-up.idle, .speed-down.idle {
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
 /* ── Config Panel ── */
 .config-section {
   background: var(--bg-card);
