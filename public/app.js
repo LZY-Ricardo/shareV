@@ -344,7 +344,12 @@
           const upSpeed = Math.max(0, data.up - prevCounters.up) / dt;
           const downSpeed = Math.max(0, data.down - prevCounters.down) / dt;
           const el = document.getElementById('speedDisplay');
-          if (el) el.innerHTML = `<span class="speed-up">↑${formatSpeed(upSpeed)}</span><span class="speed-down">↓${formatSpeed(downSpeed)}</span>`;
+          if (el) {
+            const upEl = el.querySelector('.speed-up');
+            const downEl = el.querySelector('.speed-down');
+            if (upEl) upEl.textContent = `↑${formatSpeed(upSpeed)}`;
+            if (downEl) downEl.textContent = `↓${formatSpeed(downSpeed)}`;
+          }
         }
       }
       prevCounters = { up: data.up, down: data.down, ts: now };
