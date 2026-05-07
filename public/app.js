@@ -148,36 +148,37 @@
       }
     }
 
-    // Node info bar
+    // Node info bar (two-row layout)
     html += '<div class="node-bar">';
+    // Row 1: status + name + devices
+    html += '<div class="node-bar-main">';
+    html += `<span class="status-badge ${online ? 'online' : 'offline'}">${online ? '在线' : '离线'}</span>`;
     if (node.remark) {
-      html += `<span class="tag">${esc(node.protocol || 'vless')}</span>`;
       html += `<span class="node-name">${esc(node.remark)}</span>`;
     }
     html += `<span class="device-count" onclick="toggleDevices()">`;
-    html += `<span class="dot ${online ? 'online' : 'offline'}"></span>`;
     const limitIp = node.limitIp || 0;
     if (online && devices > 0) {
       const atLimit = limitIp > 0 && devices >= limitIp;
-      html += `<span class="${atLimit ? 'device-at-limit' : ''}">${devices} DEVICE${devices !== 1 ? 'S' : ''}</span>`;
+      html += `<span class="dot online"></span>`;
+      html += `<span class="${atLimit ? 'device-at-limit' : ''}">${devices} 台设备</span>`;
       html += ` <span class="expand-arrow" id="deviceArrow">▶</span>`;
-    } else {
-      html += `${online ? 'ONLINE' : 'OFFLINE'}`;
     }
     if (limitIp > 0) {
       html += `<span class="device-limit-hint">上限 ${limitIp} 台</span>`;
     }
     html += `</span>`;
-    // Speed display
+    html += '</div>';
+    // Row 2: speed
     const avgSpeed = data.avgSpeed;
-    html += '<span class="speed-display" id="speedDisplay">';
+    html += '<div class="node-bar-speed" id="speedDisplay">';
     if (avgSpeed) {
-      html += `<span class="speed-up">↑${formatSpeed(avgSpeed.up)}</span>`;
-      html += `<span class="speed-down">↓${formatSpeed(avgSpeed.down)}</span>`;
+      html += `<span class="speed-up">↑ ${formatSpeed(avgSpeed.up)}</span>`;
+      html += `<span class="speed-down">↓ ${formatSpeed(avgSpeed.down)}</span>`;
     } else {
-      html += '<span class="speed-up">↑—</span><span class="speed-down">↓—</span>';
+      html += '<span class="speed-up">↑ —</span><span class="speed-down">↓ —</span>';
     }
-    html += '</span>';
+    html += '</div>';
     html += '</div>';
 
     // Quota progress bar
@@ -250,37 +251,57 @@
 
     // Config link panel (bottom)
     if (data.configLink) {
+      const hasClash = !!data.clashConfigUrl;
       html += '<div class="config-section">';
       html += '<div class="config-header" onclick="toggleConfig()">';
       html += '<span class="config-title">连接配置</span>';
       html += '<span class="expand-arrow" id="configArrow">▶</span>';
       html += '</div>';
       html += '<div class="config-body" id="configBody" style="display:none">';
+
+      // Tab bar
+      if (hasClash) {
+        html += '<div class="config-tabs">';
+        html += '<button class="config-tab active" data-tab="vless" onclick="switchConfigTab(\'vless\')">VLESS</button>';
+        html += '<button class="config-tab" data-tab="clash" onclick="switchConfigTab(\'clash\')">Clash</button>';
+        html += '</div>';
+      }
+
+      // VLESS panel
+      html += '<div class="config-panel" id="vlessPanel">';
       html += `<input type="text" class="config-link" id="configInput" value="${esc(data.configLink)}" readonly onclick="this.select()" />`;
       html += '<div class="config-actions">';
       html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
-      if (data.clashConfigUrl) {
-        html += '<button class="config-clash-btn" onclick="copyClashConfig()">复制 Clash 订阅</button>';
-      }
       html += '<button class="config-import-btn" onclick="importToV2RayN()">导入 v2rayN</button>';
       html += '<button class="config-help-btn" onclick="toggleImportGuide()">注册协议教程</button>';
       html += '</div>';
-      if (data.clashConfigUrl) {
-        html += `<input type="text" class="sr-only" id="clashConfigUrl" value="${esc(data.clashConfigUrl)}" readonly />`;
-      }
       html += '<div class="config-guide" id="configGuide" style="display:none">';
       html += '<div class="guide-title">v2rayN 导入与协议注册</div>';
-      html += '<div class="guide-step">1. 先点“导入 v2rayN”。如果客户端已注册 `v2rayn://` 协议，会自动弹起导入。</div>';
-      html += '<div class="guide-step">2. 如果没有自动打开，说明本机还没注册协议。你仍然可以先点“复制链接”，回到 v2rayN 里粘贴导入。</div>';
+      html += '<div class="guide-step">1. 先点"导入 v2rayN"。如果客户端已注册 `v2rayn://` 协议，会自动弹起导入。</div>';
+      html += '<div class="guide-step">2. 如果没有自动打开，说明本机还没注册协议。你仍然可以先点"复制链接"，回到 v2rayN 里粘贴导入。</div>';
       html += '<div class="guide-step">3. 想启用一键导入时，在 Windows PowerShell 里执行下面这段命令。先把第一行的 v2rayN 路径改成你自己的。</div>';
       html += '<textarea class="guide-code" readonly onclick="this.select()" id="guideCode">$exe = "C:\\Path\\To\\v2rayN\\v2rayN.exe"\n\nNew-Item -Path "HKCU:\\Software\\Classes\\v2rayn" -Force | Out-Null\nSet-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn" -Name "(default)" -Value "URL:v2rayN Protocol"\nNew-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn" -Name "URL Protocol" -Value "" -PropertyType String -Force | Out-Null\n\nNew-Item -Path "HKCU:\\Software\\Classes\\v2rayn\\DefaultIcon" -Force | Out-Null\nSet-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn\\DefaultIcon" -Name "(default)" -Value "\\`"$exe\\`",0"\n\nNew-Item -Path "HKCU:\\Software\\Classes\\v2rayn\\shell\\open\\command" -Force | Out-Null\nSet-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn\\shell\\open\\command" -Name "(default)" -Value "\\`"$exe\\`" \\`"%1\\`""</textarea>';
       html += '<div class="guide-actions">';
       html += '<button class="guide-copy-btn" onclick="copyGuideCode()">复制教程命令</button>';
       html += '</div>';
-      html += '<div class="guide-note">执行后重启 v2rayN，再回来点“导入 v2rayN”即可。</div>';
+      html += '<div class="guide-note">执行后重启 v2rayN，再回来点"导入 v2rayN"即可。</div>';
       html += '</div>';
       html += '<div class="qr-container" id="qrContainer"></div>';
-      html += '<div class="config-hint">可直接导入 v2rayN；Clash Verge 用户请点击"复制 Clash 订阅" · 也可以扫描二维码导入 · <a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener" class="config-dl">下载 v2rayN</a> · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
+      html += '<div class="config-hint">可扫描二维码导入 · <a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener" class="config-dl">下载 v2rayN</a></div>';
+      html += '</div>';
+
+      // Clash panel
+      if (hasClash) {
+        html += '<div class="config-panel" id="clashPanel" style="display:none">';
+        html += '<input type="text" class="config-link" id="clashConfigUrl" value="' + esc(data.clashConfigUrl) + '" readonly onclick="this.select()" />';
+        html += '<div class="config-actions">';
+        html += '<button class="config-clash-btn" onclick="copyClashConfig()">复制订阅</button>';
+        html += '</div>';
+        html += '<div class="qr-container" id="qrContainerClash"></div>';
+        html += '<div class="config-hint">在 Clash Verge 中粘贴订阅 URL · 也可扫描二维码 · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
+        html += '</div>';
+      }
+
       html += '</div>';
       html += '</div>';
     }
@@ -296,11 +317,15 @@
       drawChart(last7);
     }
 
-    // Render QR code if config link exists
+    // Render QR codes
     if (data.configLink) {
       try {
         const qrContainer = document.getElementById('qrContainer');
         if (qrContainer) qrContainer.innerHTML = generateQR(data.configLink);
+        if (data.clashConfigUrl) {
+          const qrClash = document.getElementById('qrContainerClash');
+          if (qrClash) qrClash.innerHTML = generateQR(data.clashConfigUrl);
+        }
       } catch (e) { /* QR generation failed, ignore */ }
     }
   }
@@ -353,8 +378,8 @@
           if (el) {
             const upEl = el.querySelector('.speed-up');
             const downEl = el.querySelector('.speed-down');
-            if (upEl) upEl.textContent = `↑${formatSpeed(upSpeed)}`;
-            if (downEl) downEl.textContent = `↓${formatSpeed(downSpeed)}`;
+            if (upEl) upEl.textContent = `↑ ${formatSpeed(upSpeed)}`;
+            if (downEl) downEl.textContent = `↓ ${formatSpeed(downSpeed)}`;
           }
         }
       }
@@ -522,6 +547,15 @@
     newCanvas.onmouseleave = () => { tooltip.style.display = 'none'; };
   }
 
+  window.switchConfigTab = function (tab) {
+    const vlessPanel = document.getElementById('vlessPanel');
+    const clashPanel = document.getElementById('clashPanel');
+    const tabs = document.querySelectorAll('.config-tab');
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    if (vlessPanel) vlessPanel.style.display = tab === 'vless' ? 'flex' : 'none';
+    if (clashPanel) clashPanel.style.display = tab === 'clash' ? 'flex' : 'none';
+  };
+
   window.toggleConfig = function () {
     const body = document.getElementById('configBody');
     const arrow = document.getElementById('configArrow');
@@ -549,7 +583,7 @@
     if (!input) return;
     navigator.clipboard.writeText(input.value).then(() => {
       const btn = document.querySelector('.config-clash-btn');
-      if (btn) { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制 Clash 订阅', 1500); }
+      if (btn) { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制订阅', 1500); }
     }).catch(() => {});
   };
 
