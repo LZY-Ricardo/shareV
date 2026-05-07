@@ -101,6 +101,17 @@
     return { value, unit: units[i] };
   }
 
+  function formatSplit(totalBytes, up, down) {
+    const total = formatBytes(totalBytes);
+    const unitIdx = ['B', 'KB', 'MB', 'GB', 'TB'].indexOf(total.unit);
+    const div = Math.pow(1024, unitIdx);
+    const precision = unitIdx > 1 ? 2 : 0;
+    const totalNum = parseFloat(total.value);
+    const upDisp = (up / div).toFixed(precision);
+    const downDisp = (totalNum - parseFloat(upDisp)).toFixed(precision);
+    return { total, upDisp, downDisp };
+  }
+
   function sumTraffic(up, down) {
     return formatBytes(up + down);
   }
@@ -272,13 +283,12 @@
   }
 
   function card(label, formatted, cls, up, down) {
-    const upF = formatBytes(up);
-    const downF = formatBytes(down);
+    const s = formatSplit(up + down, up, down);
     return `
       <div class="card ${cls}">
         <div class="label">${label}</div>
-        <div class="value">${formatted.value}<span class="unit">${formatted.unit}</span></div>
-        <div class="detail">↑${upF.value}${upF.unit} ↓${downF.value}${downF.unit}</div>
+        <div class="value">${s.total.value}<span class="unit">${s.total.unit}</span></div>
+        <div class="detail">↑${s.upDisp}${s.total.unit} ↓${s.downDisp}${s.total.unit}</div>
       </div>`;
   }
 
@@ -314,9 +324,8 @@
     const periodDetail = cards.querySelector('.period .detail');
     if (periodCard) periodCard.textContent = days === 7 ? '账号近7天' : '账号近30天';
     if (periodValue) periodValue.innerHTML = `${periodF.value}<span class="unit">${periodF.unit}</span>`;
-    const upF = formatBytes(periodUp);
-    const downF = formatBytes(periodDown);
-    if (periodDetail) periodDetail.textContent = `↑${upF.value}${upF.unit} ↓${downF.value}${downF.unit}`;
+    const ps = formatSplit(periodUp + periodDown, periodUp, periodDown);
+    if (periodDetail) periodDetail.textContent = `↑${ps.upDisp}${ps.total.unit} ↓${ps.downDisp}${ps.total.unit}`;
 
     // Update chart title and redraw
     const title = document.getElementById('chartTitle');

@@ -120,14 +120,23 @@ async function getUserStats(email) {
   let nodeInfo = null;
   let configLink = null;
 
+  const daily = db.getDailyTraffic(email, 30);
+
   if (liveClient) {
-    const totalTraffic = splitAllTimeByCurrentTraffic(
-      liveClient.up || 0,
-      liveClient.down || 0,
-      liveClient.allTime || 0
-    );
-    totalUp = totalTraffic.up;
-    totalDown = totalTraffic.down;
+    const allTime = liveClient.allTime || 0;
+    const dailyUpTotal = daily.reduce((s, d) => s + d.up, 0);
+    const dailyDownTotal = daily.reduce((s, d) => s + d.down, 0);
+    const dailyTotal = dailyUpTotal + dailyDownTotal;
+    if (allTime > 0 && dailyTotal > 0) {
+      totalUp = Math.round(allTime * (dailyUpTotal / dailyTotal));
+      totalDown = allTime - totalUp;
+    } else {
+      const totalTraffic = splitAllTimeByCurrentTraffic(
+        liveClient.up || 0, liveClient.down || 0, allTime
+      );
+      totalUp = totalTraffic.up;
+      totalDown = totalTraffic.down;
+    }
     monthUp = liveClient.up || 0;
     monthDown = liveClient.down || 0;
 
@@ -154,7 +163,6 @@ async function getUserStats(email) {
   }
 
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
-  const daily = db.getDailyTraffic(email, 30);
   const thisMonthTraffic = db.getPeriodTraffic(email, db.getMonthStart());
   const lastMonthTraffic = db.getPeriodTraffic(email, db.getLastMonthStart());
 
