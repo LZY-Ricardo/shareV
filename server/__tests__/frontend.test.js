@@ -33,6 +33,14 @@ describe('access model', () => {
     assert.match(app, /\/api\/stats\?token=/);
     assert.doesNotMatch(app, /\/api\/stats\?name=/);
   });
+
+  it('copies the Clash subscription URL for Clash Verge import', () => {
+    const app = readPublic('app.js');
+
+    assert.match(app, /data\.clashConfigUrl/);
+    assert.match(app, /id="clashConfigUrl"/);
+    assert.doesNotMatch(app, /id="clashConfigArea"/);
+  });
 });
 
 describe('traffic chart responsiveness', () => {

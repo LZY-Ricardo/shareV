@@ -103,6 +103,10 @@ function getUserByToken(req, res) {
   return user;
 }
 
+function getClashConfigUrl(req, token) {
+  return `${getBaseUrl(req)}/sub/clash?token=${encodeURIComponent(token)}`;
+}
+
 // ── API: Get stats by user access token ──
 app.get('/api/stats', rateLimiter, async (req, res) => {
   const user = getUserByToken(req, res);
@@ -112,10 +116,33 @@ app.get('/api/stats', rateLimiter, async (req, res) => {
     const stats = await tracker.getUserStats(user.email);
     res.json({
       name: user.name,
+      clashConfigUrl: stats.clashConfig ? getClashConfigUrl(req, user.token) : null,
       ...stats,
     });
   } catch (err) {
     console.error('[shareV] Stats error:', err.message);
+    res.status(500).json({ error: '服务暂时不可用' });
+  }
+});
+
+app.get('/sub/clash', rateLimiter, async (req, res) => {
+  const user = getUserByToken(req, res);
+  if (!user) return;
+
+  try {
+    const stats = await tracker.getUserStats(user.email);
+    if (!stats.clashConfig) return res.status(404).json({ error: '未找到 Clash 配置' });
+
+    res.setHeader('content-type', 'text/yaml; charset=utf-8');
+    res.setHeader('cache-control', 'no-store');
+    const filename = encodeURIComponent(`${user.name || user.email}.yaml`);
+    res.setHeader(
+      'content-disposition',
+      `inline; filename="clash.yaml"; filename*=UTF-8''${filename}`
+    );
+    res.send(`${stats.clashConfig}\n`);
+  } catch (err) {
+    console.error('[shareV] Clash subscription error:', err.message);
     res.status(500).json({ error: '服务暂时不可用' });
   }
 });
@@ -159,6 +186,7 @@ app.get('/api/admin/stats', rateLimiter, requireAdmin, async (req, res) => {
       name: user.name,
       token: user.token,
       url: `${getBaseUrl(req)}/#t=${encodeURIComponent(user.token)}`,
+      clashConfigUrl: stats.clashConfig ? getClashConfigUrl(req, user.token) : null,
       ...stats,
     });
   } catch (err) {

@@ -222,8 +222,8 @@ async function getUserStats(email) {
 }
 
 // Parse inbound+client into fields shared by vless:// link and Clash YAML
-function parseVlessReality(inbound, client) {
-  if (!config || !config.server || inbound.protocol !== 'vless') return null;
+function parseVlessReality(inbound, client, cfg = config) {
+  if (!cfg || !cfg.server || inbound.protocol !== 'vless') return null;
   const settings = JSON.parse(inbound.settings || '{}');
   const clientCfg = (settings.clients || []).find(c => c.email === client.email);
   const uuid = clientCfg ? clientCfg.id : null;
@@ -233,11 +233,11 @@ function parseVlessReality(inbound, client) {
   const reality = stream.realitySettings || {};
   const pbk = reality.settings?.publicKey;
   const sni = (reality.serverNames || [])[0];
-  const sid = (reality.shortIds || [])[0];
+  const sid = (reality.shortIds || [])[0] ?? '';
   const fp = reality.settings?.fingerprint || 'chrome';
   if (!pbk || !sni) return null;
 
-  return { uuid, server: config.server, port: inbound.port, sni, fp, pbk, sid, email: client.email };
+  return { uuid, server: cfg.server, port: inbound.port, sni, fp, pbk, sid, email: client.email };
 }
 
 function buildConfigLink(inbound, client) {
@@ -261,28 +261,40 @@ function buildConfigLink(inbound, client) {
   }
 }
 
-// Generate mihomo (Clash Meta) proxy YAML for VLESS+Reality+Vision
-function buildClashConfig(inbound, client) {
+function yamlQuote(value) {
+  return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+// Generate a mihomo (Clash Meta) profile for Clash Verge subscription import.
+function buildClashConfig(inbound, client, cfg = config) {
   try {
-    const f = parseVlessReality(inbound, client);
+    const f = parseVlessReality(inbound, client, cfg);
     if (!f) return null;
 
+    const groupName = '自动选择';
     const lines = [
       'proxies:',
-      `  - name: "${f.email}"`,
+      `  - name: ${yamlQuote(f.email)}`,
       '    type: vless',
-      `    server: ${f.server}`,
+      `    server: ${yamlQuote(f.server)}`,
       `    port: ${f.port}`,
-      `    uuid: ${f.uuid}`,
+      `    uuid: ${yamlQuote(f.uuid)}`,
       '    network: tcp',
       '    udp: true',
       '    tls: true',
       '    flow: xtls-rprx-vision',
-      `    servername: ${f.sni}`,
-      `    client-fingerprint: ${f.fp}`,
+      `    servername: ${yamlQuote(f.sni)}`,
+      `    client-fingerprint: ${yamlQuote(f.fp)}`,
       '    reality-opts:',
-      `      public-key: ${f.pbk}`,
-      `      short-id: ${f.sid}`,
+      `      public-key: ${yamlQuote(f.pbk)}`,
+      `      short-id: ${yamlQuote(f.sid)}`,
+      'proxy-groups:',
+      `  - name: ${yamlQuote(groupName)}`,
+      '    type: select',
+      '    proxies:',
+      `      - ${yamlQuote(f.email)}`,
+      'rules:',
+      `  - MATCH,${groupName}`,
     ];
     return lines.join('\n');
   } catch {
@@ -310,4 +322,11 @@ async function getLiveCounters(email) {
   return null;
 }
 
-module.exports = { init, snapshot, ensureTodayBaselineSnapshot, getUserStats, getLiveCounters };
+module.exports = {
+  init,
+  snapshot,
+  ensureTodayBaselineSnapshot,
+  getUserStats,
+  getLiveCounters,
+  buildClashConfig,
+};

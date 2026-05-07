@@ -14,4 +14,11 @@ describe('admin routes', () => {
       assert.match(indexSource, pattern);
     }
   });
+
+  it('exposes a Clash subscription URL for user stats responses', () => {
+    assert.match(indexSource, /clashConfigUrl\s*:\s*stats\.clashConfig \? getClashConfigUrl\(req, user\.token\) : null/);
+    assert.match(indexSource, /\/sub\/clash\?token=\$\{encodeURIComponent\(token\)\}/);
+    assert.match(indexSource, /app\.get\('\/sub\/clash'/);
+    assert.match(indexSource, /content-type',\s*'text\/yaml/);
+  });
 });

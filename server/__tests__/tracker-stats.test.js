@@ -73,4 +73,36 @@ describe('traffic tracker stats', () => {
 
     assert.deepEqual(stats.total, { up: 100, down: 300 });
   });
+
+  it('builds a full Clash Verge importable profile for VLESS Reality', () => {
+    const tracker = loadTracker({ inbounds: [] });
+    const inbound = {
+      protocol: 'vless',
+      port: 443,
+      settings: JSON.stringify({
+        clients: [{ email: '亮', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+      }),
+      streamSettings: JSON.stringify({
+        realitySettings: {
+          serverNames: ['www.microsoft.com'],
+          shortIds: ['abcd'],
+          settings: {
+            publicKey: 'pub-key',
+            fingerprint: 'chrome',
+          },
+        },
+      }),
+    };
+    const client = { email: '亮' };
+
+    const profile = tracker.buildClashConfig(inbound, client, { server: 'v.sunandyu.top' });
+
+    assert.match(profile, /^proxies:\n/);
+    assert.match(profile, /type: vless/);
+    assert.match(profile, /reality-opts:\n\s+public-key: "pub-key"\n\s+short-id: "abcd"/);
+    assert.match(profile, /\nproxy-groups:\n/);
+    assert.match(profile, /\n\s+- name: "自动选择"\n\s+type: select\n\s+proxies:\n\s+- "亮"/);
+    assert.match(profile, /\nrules:\n\s+- MATCH,自动选择\n?$/);
+    assert.doesNotMatch(profile, /undefined/);
+  });
 });
