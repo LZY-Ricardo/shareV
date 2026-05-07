@@ -99,6 +99,9 @@ describe('traffic tracker stats', () => {
 
     assert.match(profile, /^proxies:\n/);
     assert.match(profile, /type: vless/);
+    assert.match(profile, /\n\s+encryption: ""/);
+    assert.match(profile, /\n\s+packet-encoding: xudp/);
+    assert.match(profile, /\n\s+smux:\n\s+enabled: false/);
     assert.match(profile, /reality-opts:\n\s+public-key: "pub-key"\n\s+short-id: "abcd"/);
     assert.match(profile, /\nproxy-groups:\n/);
     assert.match(profile, /\n\s+- name: "自动选择"\n\s+type: select\n\s+proxies:\n\s+- "亮"/);
