@@ -221,7 +221,7 @@
         </div>
         <div class="advanced-box">
           <p>把下面的命令复制到 Windows PowerShell 里执行。执行前先把第一行的 <code>v2rayN.exe</code> 路径改成你电脑上的真实路径。</p>
-          <textarea class="guide-code" readonly onclick="this.select()" id="guideCode">$exe = 'C:\Users\Hua\Downloads\v2rayN-windows-64-SelfContained\v2rayN-windows-64-SelfContained\v2rayN.exe'
+          <textarea class="guide-code" readonly onclick="this.select()" id="guideCode">$exe = 'C:\Path\To\v2rayN\v2rayN.exe'
 
 New-Item -Path 'HKCU:\Software\Classes\v2rayn' -Force | Out-Null
 Set-ItemProperty -Path 'HKCU:\Software\Classes\v2rayn' -Name '(default)' -Value 'URL:v2rayN Protocol'
