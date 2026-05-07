@@ -662,8 +662,10 @@
     const url = input.value;
     const btn = document.querySelector('.config-clash-import-btn');
 
+    let copied = false;
     try {
       await navigator.clipboard.writeText(url);
+      copied = true;
     } catch (_) {}
 
     if (btn) {
@@ -680,6 +682,14 @@
       launcher.click();
       setTimeout(() => launcher.remove(), 1500);
     } catch (_) {}
+
+    toast(
+      copied
+        ? '已复制订阅并尝试打开 Clash Verge；若未弹出导入，请确保客户端已在运行后重试'
+        : '已尝试打开 Clash Verge；若未弹出导入，请先打开客户端再点一次',
+      copied ? 'info' : 'error',
+      3500
+    );
 
     setTimeout(() => {
       if (btn) {
