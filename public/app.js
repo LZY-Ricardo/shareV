@@ -93,6 +93,23 @@
     }
   }
 
+  function toast(message, type = 'info', duration = 2200) {
+    let el = document.querySelector('.toast');
+    if (el) el.remove();
+    el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = message;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => el.classList.add('show'));
+    });
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => el.remove(), 350);
+    }, duration);
+  }
+
   function formatBytes(bytes) {
     if (bytes === 0) return { value: '0', unit: 'B' };
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -272,22 +289,11 @@
       html += `<input type="text" class="config-link" id="configInput" value="${esc(data.configLink)}" readonly onclick="this.select()" />`;
       html += '<div class="config-actions">';
       html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
-      html += '<button class="config-import-btn" onclick="importToV2RayN()">导入 v2rayN</button>';
-      html += '<button class="config-help-btn" onclick="toggleImportGuide()">注册协议教程</button>';
-      html += '</div>';
-      html += '<div class="config-guide" id="configGuide" style="display:none">';
-      html += '<div class="guide-title">v2rayN 导入与协议注册</div>';
-      html += '<div class="guide-step">1. 先点"导入 v2rayN"。如果客户端已注册 `v2rayn://` 协议，会自动弹起导入。</div>';
-      html += '<div class="guide-step">2. 如果没有自动打开，说明本机还没注册协议。你仍然可以先点"复制链接"，回到 v2rayN 里粘贴导入。</div>';
-      html += '<div class="guide-step">3. 想启用一键导入时，在 Windows PowerShell 里执行下面这段命令。先把第一行的 v2rayN 路径改成你自己的。</div>';
-      html += '<textarea class="guide-code" readonly onclick="this.select()" id="guideCode">$exe = "C:\\Path\\To\\v2rayN\\v2rayN.exe"\n\nNew-Item -Path "HKCU:\\Software\\Classes\\v2rayn" -Force | Out-Null\nSet-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn" -Name "(default)" -Value "URL:v2rayN Protocol"\nNew-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn" -Name "URL Protocol" -Value "" -PropertyType String -Force | Out-Null\n\nNew-Item -Path "HKCU:\\Software\\Classes\\v2rayn\\DefaultIcon" -Force | Out-Null\nSet-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn\\DefaultIcon" -Name "(default)" -Value "\\`"$exe\\`",0"\n\nNew-Item -Path "HKCU:\\Software\\Classes\\v2rayn\\shell\\open\\command" -Force | Out-Null\nSet-ItemProperty -Path "HKCU:\\Software\\Classes\\v2rayn\\shell\\open\\command" -Name "(default)" -Value "\\`"$exe\\`" \\`"%1\\`""</textarea>';
-      html += '<div class="guide-actions">';
-      html += '<button class="guide-copy-btn" onclick="copyGuideCode()">复制教程命令</button>';
-      html += '</div>';
-      html += '<div class="guide-note">执行后重启 v2rayN，再回来点"导入 v2rayN"即可。</div>';
+      html += '<button class="config-import-btn" onclick="importToV2RayN()">复制并打开 v2rayN</button>';
+      html += '<button class="config-help-btn" onclick="openGuide()">查看导入教程</button>';
       html += '</div>';
       html += '<div class="qr-container" id="qrContainer"></div>';
-      html += '<div class="config-hint">可扫描二维码导入 · <a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener" class="config-dl">下载 v2rayN</a></div>';
+      html += '<div class="config-hint">不会导入？打开教程按步骤操作。也可以扫描二维码导入 · <a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener" class="config-dl">下载 v2rayN</a></div>';
       html += '</div>';
 
       // Clash panel
@@ -297,12 +303,12 @@
         html += '<div class="config-actions">';
         html += '<button class="config-clash-btn" onclick="copyClashConfig()">复制订阅</button>';
         html += '<button class="config-clash-import-btn" onclick="importToClashVerge()">导入 Clash Verge</button>';
+        html += '<button class="config-help-btn" onclick="openGuide()">查看导入教程</button>';
         html += '</div>';
         html += '<div class="qr-container" id="qrContainerClash"></div>';
-        html += '<div class="config-hint">也可扫描二维码导入 · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
+        html += '<div class="config-hint">不会导入？打开教程按步骤操作。也可扫描二维码导入 · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
         html += '</div>';
       }
-
       html += '</div>';
       html += '</div>';
     }
@@ -588,7 +594,10 @@
     navigator.clipboard.writeText(input.value).then(() => {
       const btn = document.querySelector('.config-copy-btn');
       if (btn) { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制链接', 1500); }
-    }).catch(() => {});
+      toast('链接已复制，可以直接去客户端粘贴导入', 'success');
+    }).catch(() => {
+      toast('复制失败，请手动选中链接后复制', 'error');
+    });
   };
 
   window.copyClashConfig = function () {
@@ -607,8 +616,10 @@
     const link = input.value;
     const btn = document.querySelector('.config-import-btn');
 
+    let copied = false;
     try {
       await navigator.clipboard.writeText(link);
+      copied = true;
     } catch (_) {}
 
     if (btn) {
@@ -620,16 +631,25 @@
       // Best-effort deep link for desktop clients. If the protocol is not
       // registered, users can still paste from clipboard in v2rayN.
       const schemeUrl = `v2rayn://install-config?url=${encodeURIComponent(link)}`;
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = schemeUrl;
-      document.body.appendChild(iframe);
-      setTimeout(() => iframe.remove(), 1500);
+      const launcher = document.createElement('a');
+      launcher.href = schemeUrl;
+      launcher.style.display = 'none';
+      document.body.appendChild(launcher);
+      launcher.click();
+      setTimeout(() => launcher.remove(), 1500);
     } catch (_) {}
+
+    toast(
+      copied
+        ? '已复制链接并尝试打开 v2rayN；回客户端按 Ctrl+V 即可导入'
+        : '已尝试打开 v2rayN；若没有弹起，请先注册协议',
+      copied ? 'info' : 'error',
+      3200
+    );
 
     setTimeout(() => {
       if (btn) {
-        btn.textContent = '导入 v2rayN';
+        btn.textContent = '复制并打开 v2rayN';
         btn.disabled = false;
       }
     }, 1800);
@@ -666,26 +686,15 @@
         btn.disabled = false;
       }
     }, 1800);
-  }; = function () {
-    const guide = document.getElementById('configGuide');
-    const btn = document.querySelector('.config-help-btn');
-    if (!guide) return;
-    const opening = guide.style.display === 'none';
-    guide.style.display = opening ? 'block' : 'none';
-    if (btn) btn.textContent = opening ? '收起教程' : '注册协议教程';
   };
 
-  window.copyGuideCode = async function () {
-    const code = document.getElementById('guideCode');
-    if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code.value);
-      const btn = document.querySelector('.guide-copy-btn');
-      if (btn) {
-        btn.textContent = '已复制 ✓';
-        setTimeout(() => btn.textContent = '复制教程命令', 1500);
-      }
-    } catch (_) {}
+  window.openGuide = function () {
+    const input = document.getElementById('configInput');
+    const link = input ? input.value : '';
+    if (link) localStorage.setItem('sharev_guide_link', link);
+    if (lastData?.name) localStorage.setItem('sharev_guide_user', lastData.name);
+    if (currentToken) localStorage.setItem('sharev_guide_token', currentToken);
+    window.open('/guide.html', '_blank', 'noopener');
   };
 
   window.toggleDevices = function () {

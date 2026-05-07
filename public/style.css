@@ -864,29 +864,6 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   box-shadow: 0 0 8px var(--amber-dim);
 }
 
-.config-guide {
-  margin-top: 4px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.guide-title {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--text-bright);
-  margin-bottom: 10px;
-}
-
-.guide-step,
-.guide-note {
-  font-size: 11px;
-  line-height: 1.7;
-  color: var(--text-dim);
-  margin-bottom: 8px;
-}
-
 .guide-code {
   width: 100%;
   min-height: 230px;
@@ -908,20 +885,299 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   margin-top: 8px;
 }
 
+.guide-actions-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.guide-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .config-hint {
   font-size: 10px;
   color: var(--text-dim);
   text-align: center;
 }
-
-.config-dl {
-  color: var(--cyan);
-  text-decoration: none;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+/* ── Guide Page ── */
+.guide-container {
+  max-width: 1080px;
 }
 
-.config-dl:hover { opacity: 1; text-decoration: underline; }
+.guide-content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.guide-header {
+  margin-bottom: 24px;
+}
+
+.guide-hero,
+.guide-section,
+.guide-current-link-card,
+.advanced-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.guide-hero {
+  display: grid;
+  grid-template-columns: 1.35fr 0.9fr;
+  gap: 20px;
+  padding: 24px;
+  align-items: stretch;
+}
+
+.guide-kicker,
+.guide-eyebrow,
+.platform-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+}
+
+.guide-kicker {
+  color: var(--cyan);
+  margin-bottom: 12px;
+}
+
+.guide-hero h1,
+.guide-section h2 {
+  font-size: 30px;
+  line-height: 1.15;
+  color: var(--text-bright);
+}
+
+.guide-hero p,
+.guide-section-head p,
+.platform-card p,
+.step-copy p,
+.faq-card p,
+.advanced-box p {
+  color: #b2bccd;
+  line-height: 1.75;
+  font-size: 14px;
+}
+
+.guide-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: center;
+}
+
+.guide-hero-card {
+  padding: 18px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(0, 240, 255, 0.06), rgba(14, 165, 160, 0.04));
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.guide-side-title,
+.guide-title {
+  font-family: var(--mono);
+  color: var(--text-bright);
+  font-size: 13px;
+}
+
+.guide-checklist {
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: #b2bccd;
+  line-height: 1.7;
+  font-size: 13px;
+}
+
+.guide-link-box,
+.guide-link-box--large {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  background: rgba(4, 8, 14, 0.72);
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  word-break: break-all;
+}
+
+.guide-link-box--large {
+  min-height: 96px;
+}
+
+.guide-section {
+  padding: 22px;
+}
+
+.guide-section-head {
+  margin-bottom: 18px;
+}
+
+.guide-eyebrow {
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+
+.platform-grid,
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.platform-card,
+.faq-card,
+.platform-guide-card,
+.step-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+}
+
+.platform-card {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.platform-card.is-featured {
+  background: linear-gradient(180deg, rgba(0, 240, 255, 0.08), rgba(255, 255, 255, 0.02));
+  border-color: rgba(0, 240, 255, 0.16);
+}
+
+.platform-badge {
+  color: var(--amber);
+}
+
+.platform-card h3,
+.platform-guide-card h3,
+.faq-card h3,
+.step-copy h3 {
+  color: var(--text-bright);
+  font-size: 18px;
+}
+
+.platform-card a {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  border: 1px solid rgba(0, 240, 255, 0.18);
+}
+
+.guide-steps {
+  display: grid;
+  gap: 16px;
+}
+
+.step-card {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 16px;
+  padding: 18px;
+}
+
+.step-card .step-image {
+  grid-column: 2;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.step-no {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--cyan), var(--teal));
+  color: var(--bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.step-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.step-tip {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(240, 160, 48, 0.08);
+  border: 1px solid rgba(240, 160, 48, 0.14);
+  color: #d9c09b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.platform-guide-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.platform-guide-card,
+.faq-card {
+  padding: 18px;
+}
+
+.platform-guide-card ol {
+  margin-top: 10px;
+  padding-left: 18px;
+  color: #b2bccd;
+  line-height: 1.85;
+  font-size: 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.faq-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.advanced-box {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.guide-current-link-card {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
 /* ── Quota Progress ── */
 .quota-section {
@@ -1312,6 +1568,20 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   .chart-container { height: 160px; }
   .admin-user { align-items: flex-start; flex-direction: column; }
   .admin-actions { justify-content: flex-start; }
+  .guide-hero { grid-template-columns: 1fr; padding: 16px; }
+  .guide-hero h1,
+  .guide-section h2 { font-size: 24px; }
+  .guide-section { padding: 16px; }
+  .platform-grid,
+  .platform-guide-list,
+  .faq-grid { grid-template-columns: 1fr; }
+  .step-card { grid-template-columns: 1fr; }
+  .step-card .step-image { grid-column: 1; }
+}
+
+@media (max-width: 900px) {
+  .platform-grid { grid-template-columns: repeat(2, 1fr); }
+  .platform-guide-list { grid-template-columns: 1fr; }
 }
 
 /* ── Visually Hidden (screen-reader only) ── */
