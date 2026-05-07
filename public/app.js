@@ -296,9 +296,10 @@
         html += '<input type="text" class="config-link" id="clashConfigUrl" value="' + esc(data.clashConfigUrl) + '" readonly onclick="this.select()" />';
         html += '<div class="config-actions">';
         html += '<button class="config-clash-btn" onclick="copyClashConfig()">复制订阅</button>';
+        html += '<button class="config-clash-import-btn" onclick="importToClashVerge()">导入 Clash Verge</button>';
         html += '</div>';
         html += '<div class="qr-container" id="qrContainerClash"></div>';
-        html += '<div class="config-hint">在 Clash Verge 中粘贴订阅 URL · 也可扫描二维码 · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
+        html += '<div class="config-hint">也可扫描二维码导入 · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
         html += '</div>';
       }
 
@@ -634,7 +635,38 @@
     }, 1800);
   };
 
-  window.toggleImportGuide = function () {
+  window.importToClashVerge = async function () {
+    const input = document.getElementById('clashConfigUrl');
+    if (!input || !input.value) return;
+
+    const url = input.value;
+    const btn = document.querySelector('.config-clash-import-btn');
+
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch (_) {}
+
+    if (btn) {
+      btn.textContent = '正在打开...';
+      btn.disabled = true;
+    }
+
+    try {
+      const schemeUrl = 'clash://install-config?url=' + encodeURIComponent(url);
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = schemeUrl;
+      document.body.appendChild(iframe);
+      setTimeout(() => iframe.remove(), 1500);
+    } catch (_) {}
+
+    setTimeout(() => {
+      if (btn) {
+        btn.textContent = '导入 Clash Verge';
+        btn.disabled = false;
+      }
+    }, 1800);
+  }; = function () {
     const guide = document.getElementById('configGuide');
     const btn = document.querySelector('.config-help-btn');
     if (!guide) return;
