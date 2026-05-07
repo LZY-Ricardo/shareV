@@ -274,7 +274,7 @@
       html += '<div class="guide-note">执行后重启 v2rayN，再回来点“导入 v2rayN”即可。</div>';
       html += '</div>';
       html += '<div class="qr-container" id="qrContainer"></div>';
-      html += '<div class="config-hint">可直接导入 v2rayN；如果未自动打开，也可以复制链接或扫描二维码导入</div>';
+      html += '<div class="config-hint">可直接导入 v2rayN；如果未自动打开，也可以复制链接或扫描二维码导入 · <a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener" class="config-dl">下载 v2rayN</a></div>';
       html += '</div>';
       html += '</div>';
     }
