@@ -313,7 +313,6 @@
       html += '<div class="qr-container" id="qrContainer"></div>';
       html += '<div class="config-hint">不会导入？打开教程按步骤操作。也可以扫描二维码导入 · <a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener" class="config-dl">下载 v2rayN</a></div>';
       html += '</div>';
-      }
       html += '</div>';
       html += '</div>';
     }
