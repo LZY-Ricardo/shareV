@@ -673,11 +673,12 @@
 
     try {
       const schemeUrl = 'clash://install-config?url=' + encodeURIComponent(url);
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = schemeUrl;
-      document.body.appendChild(iframe);
-      setTimeout(() => iframe.remove(), 1500);
+      const launcher = document.createElement('a');
+      launcher.href = schemeUrl;
+      launcher.style.display = 'none';
+      document.body.appendChild(launcher);
+      launcher.click();
+      setTimeout(() => launcher.remove(), 1500);
     } catch (_) {}
 
     setTimeout(() => {
