@@ -27,13 +27,12 @@
         new QRious({
           element: canvas,
           value: link,
-          size: 180,
+          size: 512,
           level: 'M',
           background: '#ffffff',
           foreground: '#000000',
-          padding: 8,
         });
-        qrContainer.innerHTML = `<img src="${canvas.toDataURL()}" alt="当前订阅二维码" width="180" height="180" />`;
+        qrContainer.innerHTML = `<img src="${canvas.toDataURL()}" alt="当前订阅二维码" class="qr-img" />`;
       }
     } catch (_) {}
   }
