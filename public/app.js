@@ -631,14 +631,17 @@
 
   // QR code generator using QRious library
   function generateQR(text) {
+    const size = 140;
     const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
     new QRious({
       element: canvas,
       value: text,
-      size: 200,
+      size: size,
       level: 'M',
-      background: '#ffffff',
       foreground: '#000000',
+      backgroundAlpha: 0,
       padding: 0,
     });
     return `<img src="${canvas.toDataURL()}" alt="QR Code" class="qr-img" />`;
