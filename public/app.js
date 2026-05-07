@@ -635,12 +635,12 @@
     new QRious({
       element: canvas,
       value: text,
-      size: 160,
+      size: 200,
       level: 'M',
       background: '#ffffff',
       foreground: '#000000',
-      padding: 2,
+      padding: 0,
     });
-    return `<img src="${canvas.toDataURL()}" alt="QR Code" width="160" height="160" />`;
+    return `<img src="${canvas.toDataURL()}" alt="QR Code" class="qr-img" />`;
   }
 })();
