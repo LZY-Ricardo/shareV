@@ -271,10 +271,13 @@
       const hasClash = !!data.clashConfigUrl;
       html += '<div class="config-section">';
       html += '<div class="config-header" onclick="toggleConfig()">';
-      html += '<span class="config-title">连接配置</span>';
-      html += '<span class="expand-arrow" id="configArrow">▶</span>';
+      html += '<div class="config-header-left">';
+      html += '<span class="config-title">节点导入</span>';
+      html += '<span class="config-subtitle">选择客户端，一键导入代理配置</span>';
       html += '</div>';
-      html += '<div class="config-body" id="configBody" style="display:none">';
+      html += '<span class="expand-arrow" id="configArrow">▼</span>';
+      html += '</div>';
+      html += '<div class="config-body" id="configBody">';
 
       // Tab bar
       if (hasClash) {
