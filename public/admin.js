@@ -60,8 +60,11 @@
     btn.classList.add('loading');
     btn.textContent = '...';
     adminToken = token;
-    sessionStorage.setItem('sharev_admin_token', token);
-    loadUsers();
+    loadUsers().then(() => {
+      sessionStorage.setItem('sharev_admin_token', token);
+    }).catch(() => {
+      adminToken = '';
+    });
   };
 
   async function adminFetch(url, options = {}) {

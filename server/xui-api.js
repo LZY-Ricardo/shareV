@@ -7,6 +7,8 @@ let config = null;
 
 function init(cfg) {
   config = cfg;
+  sessionCookie = null;
+  loginPromise = null;
 }
 
 function shouldRejectUnauthorized(hostname) {

@@ -15,7 +15,23 @@ if (!fs.existsSync(configPath)) {
   console.error('Error: config.json not found. Copy config.example.json and edit it.');
   process.exit(1);
 }
-const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+
+let config;
+try {
+  config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+} catch (err) {
+  console.error('Error: config.json 解析失败:', err.message);
+  process.exit(1);
+}
+
+if (!config.xui || typeof config.xui !== 'object') {
+  console.error('Error: config.json 缺少 xui 配置段');
+  process.exit(1);
+}
+if (!config.users || typeof config.users !== 'object') {
+  console.error('Error: config.json 缺少 users 配置段');
+  process.exit(1);
+}
 
 // Ensure data directory exists
 const dataDir = path.join(__dirname, '..', 'data');
@@ -49,7 +65,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // ── Simple rate limiter (in-memory, per-IP) ──
 const rateLimits = new Map();
 const RATE_WINDOW = 60_000; // 1 minute
-const RATE_MAX = 60;        // max requests per window
+const RATE_MAX = 30;        // max requests per window
 
 function rateLimiter(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress;
@@ -75,7 +91,7 @@ setInterval(() => {
 }, 300_000);
 
 // ── Admin auth middleware (for protected endpoints) ──
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || null;
+const ADMIN_TOKEN = (process.env.ADMIN_TOKEN || '').trim() || null;
 if (!ADMIN_TOKEN) {
   console.warn('[shareV] WARNING: ADMIN_TOKEN not set. /api/snapshot endpoint is disabled.');
 }
