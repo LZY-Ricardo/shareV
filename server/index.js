@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const cron = require('node-cron');
 const xui = require('./xui-api');
 const tracker = require('./traffic-tracker');
@@ -223,6 +224,40 @@ app.post('/api/admin/snapshot', rateLimiter, requireAdmin, async (req, res) => {
   }
 });
 
+// ── Sync new 3X-UI clients into config ──
+async function syncClientsFromXui() {
+  try {
+    const inbounds = await xui.getInbounds();
+    const synced = [];
+    for (const inbound of inbounds) {
+      const settings = JSON.parse(inbound.settings || '{}');
+      const clients = settings.clients || [];
+      for (const cl of clients) {
+        if (!cl.id || !cl.email) continue;
+        if (config.users[cl.id]) continue;
+        const token = crypto.randomBytes(24).toString('base64url');
+        const user = { name: cl.email, email: cl.email, token };
+        config.users[cl.id] = user;
+        userDirectory.addUser(cl.id, user);
+        synced.push(cl.email);
+      }
+    }
+    if (synced.length > 0) {
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+      console.log(`[shareV] Synced ${synced.length} new client(s): ${synced.join(', ')}`);
+    }
+    return synced;
+  } catch (err) {
+    console.error('[shareV] Client sync error:', err.message);
+    return [];
+  }
+}
+
+app.post('/api/admin/sync', rateLimiter, requireAdmin, async (req, res) => {
+  const synced = await syncClientsFromXui();
+  res.json({ synced, count: synced.length });
+});
+
 // ── Health check ──
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', uptime: Math.floor(process.uptime()) });
@@ -241,7 +276,12 @@ cron.schedule('0 4 * * *', async () => {
 
 const server = app.listen(PORT, () => {
   console.log(`[shareV] Dashboard running on http://0.0.0.0:${PORT}`);
+  // Auto-sync on startup
+  syncClientsFromXui();
 });
+
+// Periodic client sync every hour
+cron.schedule('0 * * * *', () => syncClientsFromXui());
 
 // Graceful shutdown
 function shutdown(signal) {

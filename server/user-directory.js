@@ -31,7 +31,15 @@ function createUserDirectory(users = {}) {
     }));
   }
 
-  return { findByToken, listUsers };
+  function addUser(uuid, user) {
+    if (usersByToken.has(user.token)) return false;
+    const entry = { ...user, uuid, token: user.token };
+    usersByToken.set(user.token, entry);
+    allUsers.push(entry);
+    return true;
+  }
+
+  return { findByToken, listUsers, addUser };
 }
 
 module.exports = { createUserDirectory };

@@ -122,6 +122,7 @@
     setContent(`
       <div class="admin-toolbar">
         <button id="snapshotBtn" data-action="snapshot">快照</button>
+        <button id="syncBtn" data-action="sync">同步客户端</button>
         <button data-action="logout">退出</button>
       </div>
       <div class="admin-list">${rows}</div>
@@ -140,6 +141,7 @@
       case 'view': viewUser(btn.dataset.token, btn); break;
       case 'copy': copyUserLink(btn.dataset.url, btn); break;
       case 'snapshot': triggerSnapshot(btn); break;
+      case 'sync': triggerSync(btn); break;
       case 'logout': handleAdminLogout(); break;
     }
   }
@@ -188,6 +190,22 @@
     try {
       await adminFetch('/api/admin/snapshot', { method: 'POST' });
       toast('快照完成');
+      loadUsers();
+    } catch (err) {
+      toast(err.message, 'error');
+      btn.classList.remove('loading');
+    }
+  }
+
+  async function triggerSync(btn) {
+    btn.classList.add('loading');
+    try {
+      const data = await adminFetch('/api/admin/sync', { method: 'POST' });
+      if (data.count > 0) {
+        toast(`已同步 ${data.count} 个新客户端: ${data.synced.join(', ')}`);
+      } else {
+        toast('已是最新，无需同步');
+      }
       loadUsers();
     } catch (err) {
       toast(err.message, 'error');
