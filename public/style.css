@@ -1339,135 +1339,13 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 
 .node-bar .device-count:hover { color: var(--text); }
 
-/* ── Admin ── */
+/* ── Admin (see admin.css) ── */
 .admin-container {
   max-width: 760px;
 }
 
-.admin-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.admin-toolbar button,
-.admin-actions button,
-.admin-actions a {
-  padding: 6px 12px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--cyan);
-  background: var(--cyan-dim);
-  border: 1px solid rgba(0, 240, 255, 0.2);
-  border-radius: 6px;
-  cursor: pointer;
-  text-decoration: none;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.2s ease;
-}
-
-.admin-toolbar button:hover,
-.admin-actions button:hover,
-.admin-actions a:hover {
-  background: rgba(0, 240, 255, 0.2);
-  border-color: rgba(0, 240, 255, 0.4);
-  box-shadow: 0 0 12px var(--cyan-dim);
-  transform: translateY(-1px);
-}
-
-.admin-toolbar button:active,
-.admin-actions button:active,
-.admin-actions a:active {
-  transform: translateY(0) scale(0.96);
-  box-shadow: 0 0 4px var(--cyan-dim);
-}
-
-/* Button success flash */
-.admin-actions button.success {
-  color: var(--green);
-  background: var(--green-dim);
-  border-color: rgba(0, 230, 118, 0.4);
-  box-shadow: 0 0 12px var(--green-dim);
-}
-
-/* Snapshot button loading state */
-.admin-toolbar button.loading {
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-.admin-toolbar button.loading::after {
-  content: '';
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border: 2px solid transparent;
-  border-top-color: var(--cyan);
-  border-radius: 50%;
-  animation: btnSpin 0.6s linear infinite;
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
 @keyframes btnSpin {
   to { transform: rotate(360deg); }
-}
-
-.admin-list {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.admin-user {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-}
-
-.admin-user.active {
-  border-color: var(--cyan);
-}
-
-.admin-user-name {
-  color: var(--text-bright);
-  font-weight: 600;
-}
-
-.admin-user-email {
-  margin-top: 4px;
-  color: var(--text-dim);
-  font-family: var(--mono);
-  font-size: 11px;
-}
-
-.admin-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.admin-detail {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 20px;
-}
-
-.admin-detail .title {
-  color: var(--text-bright);
-  font-family: var(--mono);
-  font-size: 13px;
-  margin-bottom: 12px;
 }
 
 /* ── Toast Notification ── */
@@ -1514,51 +1392,6 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   box-shadow: 0 4px 24px var(--cyan-dim);
 }
 
-/* ── Admin User List Stagger ── */
-.admin-user {
-  opacity: 0;
-  animation: adminUserIn 0.35s ease-out forwards;
-}
-
-.admin-user:nth-child(1) { animation-delay: 0.03s; }
-.admin-user:nth-child(2) { animation-delay: 0.06s; }
-.admin-user:nth-child(3) { animation-delay: 0.09s; }
-.admin-user:nth-child(4) { animation-delay: 0.12s; }
-.admin-user:nth-child(5) { animation-delay: 0.15s; }
-.admin-user:nth-child(6) { animation-delay: 0.18s; }
-.admin-user:nth-child(7) { animation-delay: 0.21s; }
-.admin-user:nth-child(8) { animation-delay: 0.24s; }
-.admin-user:nth-child(9) { animation-delay: 0.27s; }
-.admin-user:nth-child(10) { animation-delay: 0.30s; }
-
-@keyframes adminUserIn {
-  from { opacity: 0; transform: translateX(-8px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-/* ── Admin Detail Slide In ── */
-.admin-detail {
-  animation: detailSlideIn 0.3s ease-out;
-}
-
-@keyframes detailSlideIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Admin Active User Highlight ── */
-.admin-user.active {
-  border-color: var(--cyan);
-  animation: adminUserActive 0.4s ease-out forwards;
-  background: rgba(0, 240, 255, 0.04);
-}
-
-@keyframes adminUserActive {
-  0% { border-color: var(--border); }
-  50% { border-color: var(--cyan-glow); box-shadow: 0 0 16px var(--cyan-dim); }
-  100% { border-color: var(--cyan); box-shadow: 0 0 8px var(--cyan-dim); }
-}
-
 /* ── Login Button Feedback ── */
 .login-form button:active {
   transform: scale(0.96);
@@ -1587,8 +1420,6 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   .card { padding: 14px 12px; }
   .chart-section { padding: 16px 12px; }
   .chart-container { height: 160px; }
-  .admin-user { align-items: flex-start; flex-direction: column; }
-  .admin-actions { justify-content: flex-start; }
   .guide-hero { grid-template-columns: 1fr; padding: 16px; }
   .guide-hero h1,
   .guide-section h2 { font-size: 24px; }

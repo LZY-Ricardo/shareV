@@ -1,0 +1,408 @@
+/* shareV Admin — Modern Dashboard */
+
+/* Override shared styles */
+body.admin-page {
+  background: #0b0f18;
+}
+
+body.admin-page > .grid-bg,
+body.admin-page > .scanline,
+body.admin-page > .header {
+  display: none;
+}
+
+body.admin-page .admin-container {
+  max-width: 1080px;
+}
+
+/* ── Page Header ── */
+body.admin-page .admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  animation: fadeDown 0.4s ease-out;
+}
+
+body.admin-page .admin-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: -0.3px;
+}
+
+body.admin-page .admin-page-subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+body.admin-page .admin-page-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+body.admin-page .admin-page-actions button {
+  padding: 8px 18px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+}
+
+body.admin-page .admin-page-actions button:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.admin-page .admin-page-actions button:active {
+  transform: scale(0.97);
+}
+
+body.admin-page .admin-page-actions button.btn-ghost {
+  color: var(--text-dim);
+  background: transparent;
+  border-color: transparent;
+}
+
+body.admin-page .admin-page-actions button.btn-ghost:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body.admin-page .admin-page-actions button.loading {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+body.admin-page .admin-page-actions button.loading::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: btnSpin 0.6s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ── Two-column Layout ── */
+body.admin-page .admin-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  animation: fadeUp 0.5s ease-out 0.1s both;
+}
+
+/* ── Sidebar ── */
+body.admin-page .admin-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+body.admin-page .admin-sidebar::-webkit-scrollbar { width: 4px; }
+body.admin-page .admin-sidebar::-webkit-scrollbar-track { background: transparent; }
+body.admin-page .admin-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── User List Items ── */
+body.admin-page .admin-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  background: transparent;
+  margin-bottom: 0;
+}
+
+body.admin-page .admin-user:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body.admin-page .admin-user.active {
+  background: rgba(0, 240, 255, 0.06);
+  border-color: rgba(0, 240, 255, 0.12);
+  animation: none;
+  box-shadow: none;
+}
+
+body.admin-page .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2a3040;
+  flex-shrink: 0;
+  transition: all 0.3s;
+  box-shadow: none;
+}
+
+body.admin-page .status-dot.online {
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(0, 230, 118, 0.4);
+}
+
+body.admin-page .admin-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+body.admin-page .admin-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+body.admin-page .admin-user.active .admin-user-name {
+  color: var(--text-bright);
+}
+
+body.admin-page .admin-user-email {
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+/* ── Detail Panel ── */
+body.admin-page .admin-main {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  min-height: 400px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+body.admin-page .admin-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 340px;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+body.admin-page .admin-detail {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 0;
+  border-radius: 0;
+  animation: detailFadeIn 0.25s ease-out;
+  box-shadow: none;
+}
+
+@keyframes detailFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+body.admin-page .admin-detail-header {
+  margin-bottom: 24px;
+}
+
+body.admin-page .admin-detail-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin: 0;
+}
+
+body.admin-page .admin-detail-email {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+/* ── Detail Cards ── */
+body.admin-page .admin-detail-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+body.admin-page .admin-detail-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+body.admin-page .admin-detail-card .label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+body.admin-page .admin-detail-card .value {
+  font-family: var(--mono);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+body.admin-page .admin-detail-card .unit {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-dim);
+  margin-left: 2px;
+}
+
+body.admin-page .admin-detail-card.cyan .value { color: var(--cyan); }
+body.admin-page .admin-detail-card.green .value { color: var(--green); }
+body.admin-page .admin-detail-card.amber .value { color: var(--amber); }
+
+/* ── Detail Link ── */
+body.admin-page .admin-detail-section {
+  margin-top: 24px;
+}
+
+body.admin-page .admin-detail-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+body.admin-page .admin-detail-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+body.admin-page .admin-detail-link {
+  flex: 1;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+  cursor: text;
+  width: auto;
+}
+
+body.admin-page .admin-detail-link:focus {
+  border-color: rgba(0, 240, 255, 0.25);
+}
+
+body.admin-page .admin-detail-link-row button {
+  padding: 10px 20px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+body.admin-page .admin-detail-link-row button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.admin-page .admin-detail-link-row button.success {
+  color: var(--green);
+  border-color: rgba(0, 230, 118, 0.3);
+}
+
+body.admin-page .admin-detail-link-row .btn-open {
+  padding: 10px 20px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  color: var(--cyan);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+body.admin-page .admin-detail-link-row .btn-open:hover {
+  background: rgba(0, 240, 255, 0.14);
+}
+
+/* ── User List Stagger ── */
+body.admin-page .admin-user {
+  opacity: 0;
+  animation: adminUserIn 0.3s ease-out forwards;
+  animation-delay: calc(var(--i, 0) * 0.03s);
+}
+
+@keyframes adminUserIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Login Override ── */
+body.admin-page .login-box {
+  padding-top: 80px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  body.admin-page .admin-layout {
+    grid-template-columns: 1fr;
+  }
+  body.admin-page .admin-sidebar {
+    max-height: 40vh;
+  }
+  body.admin-page .admin-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  body.admin-page .admin-detail-cards {
+    grid-template-columns: 1fr;
+  }
+  body.admin-page .admin-detail-link-row {
+    flex-direction: column;
+  }
+  body.admin-page .admin-detail-link-row button,
+  body.admin-page .admin-detail-link-row .btn-open {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
