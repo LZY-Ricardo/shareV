@@ -138,6 +138,7 @@ body.admin-page .admin-user:hover {
 }
 
 body.admin-page .admin-user.active {
+  opacity: 1;
   background: rgba(0, 240, 255, 0.06);
   border-color: rgba(0, 240, 255, 0.12);
   animation: none;
