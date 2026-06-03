@@ -7,8 +7,12 @@
   "server": "your-domain.com",
   "publicUrl": "https://your-domain.com:2053",
   "port": 3000,
+  "email": {
+    "enabled": true,
+    "from": "shareV <noreply@your-domain.com>"
+  },
   "users": {
-    "paste-uuid-here": { "name": "张三", "email": "vps3-张三", "token": "replace-with-random-token", "clashName": "shareV ultra" },
-    "paste-uuid-here": { "name": "李四", "email": "vps3-李四", "token": "replace-with-random-token" }
+    "paste-uuid-here": { "name": "张三", "email": "vps3-张三", "token": "replace-with-random-token", "clashName": "shareV ultra", "notifyEmail": "zhangsan@example.com" },
+    "paste-uuid-here": { "name": "李四", "email": "vps3-李四", "token": "replace-with-random-token", "notifyEmail": "lisi@example.com" }
   }
 }

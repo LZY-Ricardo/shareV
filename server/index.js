@@ -9,6 +9,7 @@ const db = require('./db');
 const { createUserDirectory } = require('./user-directory');
 const { resolvePublicUrl } = require('./public-url');
 const { getClashProfileFilename } = require('./clash-profile-name');
+const emailService = require('./email');
 
 // Load config
 const configPath = path.join(__dirname, '..', 'config.json');
@@ -41,6 +42,7 @@ if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 // Init modules
 xui.init(config.xui);
 tracker.init(config);
+emailService.init(config);
 
 const app = express();
 const PORT = config.port || 3000;
@@ -62,6 +64,9 @@ app.use((_, res, next) => {
 
 // Static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Parse JSON body for admin endpoints
+app.use('/api/admin/email', express.json());
 
 // ── Simple rate limiter (in-memory, per-IP) ──
 const rateLimits = new Map();
@@ -265,6 +270,114 @@ app.post('/api/admin/sync', rateLimiter, requireAdmin, async (req, res) => {
   const synced = await syncClientsFromXui();
   res.json({ synced, count: synced.length });
 });
+
+// ── Admin: send test email ──
+app.post('/api/admin/email/test', rateLimiter, requireAdmin, async (req, res) => {
+  try {
+    const token = (req.query.token || req.body?.token || '').trim();
+    const user = token ? userDirectory.findByToken(token) : null;
+    if (!user || !user.notifyEmail) {
+      return res.status(400).json({ error: '用户未找到或未配置邮箱地址' });
+    }
+    await emailService.sendTestEmail(user);
+    console.log(`[shareV] Test email sent to ${user.notifyEmail}`);
+    res.json({ success: true, email: user.notifyEmail });
+  } catch (err) {
+    console.error('[shareV] Test email error:', err.message);
+    res.status(500).json({ error: '发送失败: ' + err.message });
+  }
+});
+
+// ── Admin: send monthly report to one or all users ──
+app.post('/api/admin/email/monthly', rateLimiter, requireAdmin, async (req, res) => {
+  try {
+    const token = (req.query.token || '').trim();
+
+    const users = token
+      ? [userDirectory.findByToken(token)].filter(Boolean)
+      : userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.notifyEmail);
+
+    const results = await Promise.allSettled(users.map(async (user) => {
+      if (!user.notifyEmail) return null;
+      const stats = await tracker.getUserStats(user.email);
+      await emailService.sendMonthlyReport(user, stats, config.publicUrl);
+      return { name: user.name, email: user.notifyEmail };
+    }));
+    const sent = results
+      .filter(r => r.status === 'fulfilled' && r.value)
+      .map(r => r.value);
+    const failed = results
+      .filter(r => r.status === 'rejected')
+      .map(r => ({ name: '?', error: r.reason?.message || String(r.reason) }));
+
+    console.log(`[shareV] Monthly report sent: ${sent.length}/${sent.length + failed.length}`);
+    res.json({ sent, failed });
+  } catch (err) {
+    console.error('[shareV] Monthly report error:', err.message);
+    res.status(500).json({ error: '发送失败: ' + err.message });
+  }
+});
+
+// ── Email: monthly report on the 1st of each month at 9am ──
+if (emailService.isEnabled()) {
+  cron.schedule('0 9 1 * *', async () => {
+    console.log('[shareV] Sending monthly reports...');
+    const allUsers = userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.notifyEmail);
+    const results = await Promise.allSettled(allUsers.map(async (user) => {
+      const stats = await tracker.getUserStats(user.email);
+      await emailService.sendMonthlyReport(user, stats, config.publicUrl);
+      return user;
+    }));
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        console.log(`[shareV] Monthly report sent to ${r.value.name} <${r.value.notifyEmail}>`);
+      } else {
+        console.error(`[shareV] Monthly report failed: ${r.reason?.message || r.reason}`);
+      }
+    }
+  });
+
+  // ── Email: daily quota/expiry warning check at 9am ──
+  const lastWarningDate = new Map(); // email -> date string
+
+  cron.schedule('0 9 * * *', async () => {
+    console.log('[shareV] Checking warning conditions...');
+    const allUsers = userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] }));
+    const today = new Date().toISOString().slice(0, 10);
+
+    for (const user of allUsers) {
+      if (!user.notifyEmail) continue;
+      try {
+        const stats = await tracker.getUserStats(user.email);
+        const node = stats.node || {};
+
+        // Check quota warning (> 80%)
+        if (node.totalGB && node.totalGB > 0) {
+          const quotaBytes = node.totalGB * 1024 ** 3;
+          const usedBytes = (stats.total.up || 0) + (stats.total.down || 0);
+          const usedPct = (usedBytes / quotaBytes) * 100;
+          if (usedPct > 80 && lastWarningDate.get(user.email + ':quota') !== today) {
+            await emailService.sendQuotaWarning(user, stats, 'quota');
+            lastWarningDate.set(user.email + ':quota', today);
+            console.log(`[shareV] Quota warning sent to ${user.name} (${usedPct.toFixed(1)}%)`);
+          }
+        }
+
+        // Check expiry warning (< 7 days)
+        if (node.expiryTime && node.expiryTime > 0) {
+          const daysLeft = Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24));
+          if (daysLeft <= 7 && daysLeft >= 0 && lastWarningDate.get(user.email + ':expiry') !== today) {
+            await emailService.sendQuotaWarning(user, stats, 'expiry');
+            lastWarningDate.set(user.email + ':expiry', today);
+            console.log(`[shareV] Expiry warning sent to ${user.name} (${daysLeft} days left)`);
+          }
+        }
+      } catch (err) {
+        console.error(`[shareV] Warning check failed for ${user.name}: ${err.message}`);
+      }
+    }
+  });
+}
 
 // ── Health check ──
 app.get('/api/health', (req, res) => {
