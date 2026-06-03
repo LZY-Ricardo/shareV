@@ -158,6 +158,14 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
       'content-disposition',
       `inline; filename="clash.yaml"; filename*=UTF-8''${filename}`
     );
+    // subscription-userinfo header for Clash traffic display
+    if (stats.node) {
+      const upload = stats.total.up || 0;
+      const download = stats.total.down || 0;
+      const total = stats.node.totalGB ? Math.round(stats.node.totalGB * 1024 * 1024 * 1024) : 0;
+      const expire = stats.node.expiryTime ? Math.floor(stats.node.expiryTime / 1000) : 0;
+      res.setHeader("subscription-userinfo", `upload=${upload}; download=${download}; total=${total}; expire=${expire}`);
+    }
     res.send(`${stats.clashConfig}\n`);
   } catch (err) {
     console.error('[shareV] Clash subscription error:', err.message);
