@@ -41,74 +41,108 @@ function pctColor(pct) {
   return '#00f0ff';
 }
 
-function progressBar(pct) {
-  const color = pctColor(pct);
-  return `
-    <div class="bar-track">
-      <div style="height:100%;border-radius:4px;background:${color};width:${Math.min(100, pct).toFixed(1)}%"></div>
-    </div>`;
+// ── Inline-style building blocks (Gmail-safe, no <style>, no flex/grid) ──
+
+const BG = '#0a0e17';
+const CARD_BG = '#0e1422';
+const BORDER = '#1a2332';
+const CYAN = '#00f0ff';
+const TEXT = '#c8d0dc';
+const TEXT_DIM = '#5a6a7e';
+const TEXT_BRIGHT = '#eef1f8';
+
+function wrapperStart(title) {
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:${BG};">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:${BG};"><tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;padding:32px 24px;">
+<tr><td style="padding-bottom:4px;">
+  <span style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;font-size:22px;font-weight:700;color:${CYAN};letter-spacing:1px;">shareV</span>
+  <span style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;font-size:22px;font-weight:700;color:${TEXT_DIM};"> // ${title}</span>
+</td></tr>
+<tr><td style="padding-bottom:28px;font-family:monospace;font-size:11px;color:${TEXT_DIM};letter-spacing:2px;">TRAFFIC MONITORING SYSTEM</td></tr>`;
 }
 
-// ── Shared email styles (neon terminal theme) ──
+const wrapperEnd = `
+<tr><td style="padding-top:28px;border-top:1px solid ${BORDER};text-align:center;font-family:-apple-system,sans-serif;font-size:11px;color:#3a3a3a;">
+  shareV · 流量监控看板<br>此邮件由系统自动发送，请勿回复
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
 
-const baseStyles = `
-  <style>
-    body { margin: 0; padding: 0; background: #0a0e17; font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: #d4dae6; }
-    .wrapper { max-width: 560px; margin: 0 auto; padding: 32px 24px; }
-    .logo { font-size: 24px; font-weight: 700; color: #00f0ff; margin-bottom: 4px; letter-spacing: 1px; }
-    .logo span { color: #4a5568; }
-    .subtitle { font-size: 12px; color: #4a5568; margin-bottom: 28px; letter-spacing: 2px; text-transform: uppercase; }
-    .greeting { font-size: 16px; color: #eef1f8; margin-bottom: 24px; }
-    .section { background: rgba(12, 18, 30, 0.85); border: 1px solid rgba(0, 240, 255, 0.1); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-    .section-title { font-size: 11px; color: #4a5568; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-    .stat-item { text-align: center; }
-    .stat-value { font-size: 22px; font-weight: 700; color: #00f0ff; font-family: 'JetBrains Mono', monospace; }
-    .stat-value.danger { color: #ff4757; }
-    .stat-value.warn { color: #ffa502; }
-    .stat-label { font-size: 11px; color: #4a5568; margin-top: 4px; }
-    .bar-track { background: rgba(255,255,255,0.06); border-radius: 4px; height: 8px; overflow: hidden; margin: 8px 0; }
-    .bar-fill { height: 100%; border-radius: 4px; }
-    .bar-fill.ok { background: #00f0ff; }
-    .bar-fill.warn { background: #ffa502; }
-    .bar-fill.danger { background: #ff4757; }
-    .detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; }
-    .detail-row:last-child { border-bottom: none; }
-    .detail-label { color: #4a5568; }
-    .detail-value { color: #eef1f8; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-    .link-box { background: rgba(0, 240, 255, 0.06); border: 1px solid rgba(0, 240, 255, 0.15); border-radius: 6px; padding: 12px 16px; margin-top: 12px; word-break: break-all; font-size: 12px; color: #00f0ff; font-family: 'JetBrains Mono', monospace; }
-    .link-hint { font-size: 11px; color: #4a5568; margin-top: 6px; }
-    .alert-banner { background: rgba(255, 71, 87, 0.12); border: 1px solid rgba(255, 71, 87, 0.3); border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; color: #ff4757; font-size: 14px; font-weight: 500; }
-    .alert-banner.warn-banner { background: rgba(255, 165, 2, 0.12); border-color: rgba(255, 165, 2, 0.3); color: #ffa502; }
-    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.04); font-size: 11px; color: #2d3748; text-align: center; }
-    .footer a { color: #4a5568; text-decoration: none; }
-    .compare-up { color: #00f0ff; }
-    .compare-down { color: #4a5568; }
-  </style>`;
+function greeting(text) {
+  return `<tr><td style="padding-bottom:20px;font-family:-apple-system,sans-serif;font-size:15px;color:${TEXT_BRIGHT};line-height:1.5;">${text}</td></tr>`;
+}
 
-const baseWrapper = (body, title) => `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${baseStyles}</head>
-<body>
-<div class="wrapper">
-  <div class="logo">shareV <span>// ${title}</span></div>
-  <div class="subtitle">Traffic Monitoring System</div>
-  ${body}
-  <div class="footer">
-    shareV · 流量监控看板<br>
-    此邮件由系统自动发送，请勿回复
-  </div>
-</div>
-</body>
-</html>`;
+function sectionStart(title) {
+  return `<tr><td style="background:${CARD_BG};border:1px solid ${BORDER};border-radius:8px;padding:20px;margin-bottom:12px;">
+${title ? `<div style="font-family:monospace;font-size:10px;color:${TEXT_DIM};text-transform:uppercase;letter-spacing:2px;padding-bottom:12px;">${title}</div>` : ''}`;
+}
+
+const sectionEnd = `</td></tr>`;
+
+function statGrid(items) {
+  // items: [{value, label, color?}]
+  const cols = items.length;
+  const cellWidth = Math.floor(100 / cols);
+  let rows = '<table width="100%" cellpadding="0" cellspacing="0"><tr>';
+  for (const item of items) {
+    const color = item.color || CYAN;
+    rows += `<td width="${cellWidth}%" style="text-align:center;padding:4px 0;">
+      <div style="font-family:'Courier New',monospace;font-size:20px;font-weight:700;color:${color};">${item.value}</div>
+      <div style="font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_DIM};padding-top:2px;">${item.label}</div>
+    </td>`;
+  }
+  rows += '</tr></table>';
+  return rows;
+}
+
+function progressBar(pct) {
+  const color = pctColor(pct);
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0;">
+<tr><td style="background:#1a1a2e;border-radius:4px;height:8px;">
+  <table cellpadding="0" cellspacing="0" style="height:8px;"><tr>
+    <td style="background:${color};border-radius:4px;width:${Math.min(100, pct).toFixed(1)}%;min-width:2px;"></td>
+  </tr></table>
+</td></tr></table>`;
+}
+
+function detailRow(label, value) {
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid ${BORDER};"><tr>
+<td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT_DIM};">${label}</td>
+<td style="padding:6px 0;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:${TEXT_BRIGHT};">${value}</td>
+</tr></table>`;
+}
+
+function detailRowLast(label, value) {
+  return `<table width="100%" cellpadding="0" cellspacing="0"><tr>
+<td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT_DIM};">${label}</td>
+<td style="padding:6px 0;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:${TEXT_BRIGHT};">${value}</td>
+</tr></table>`;
+}
+
+function linkBox(url) {
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;background:#0d1a24;border:1px solid #163040;border-radius:6px;">
+<tr><td style="padding:12px 14px;font-family:'Courier New',monospace;font-size:12px;color:${CYAN};word-break:break-all;line-height:1.5;">${url}</td></tr>
+</table>`;
+}
+
+function alertBanner(text, type) {
+  const bg = type === 'expiry' ? '#1f1a0d' : '#1f0d0d';
+  const border = type === 'expiry' ? '#3d2e10' : '#3d1010';
+  const color = type === 'expiry' ? '#ffa502' : '#ff4757';
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;background:${bg};border:1px solid ${border};border-radius:6px;">
+<tr><td style="padding:12px 16px;font-family:-apple-system,sans-serif;font-size:14px;font-weight:600;color:${color};">${text}</td></tr>
+</table>`;
+}
 
 // ── Monthly report email ──
 
 function buildMonthlyHtml(user, stats, publicUrl) {
   const now = new Date();
-  // Report is about last calendar month (sent on the 1st)
-  const reportMonth = now.getMonth() === 0 ? 12 : now.getMonth(); // 1-indexed
+  const reportMonth = now.getMonth() === 0 ? 12 : now.getMonth();
   const reportYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
   const reportLabel = `${reportYear} 年 ${reportMonth} 月`;
 
@@ -118,9 +152,7 @@ function buildMonthlyHtml(user, stats, publicUrl) {
   const usedBytes = (stats.total.up || 0) + (stats.total.down || 0);
   const usedPct = hasQuota ? (usedBytes / quotaBytes) * 100 : 0;
 
-  // Extract last calendar month traffic from DB data
-  // DB: thisMonth = current month (just started), lastMonth = from prev month 1st to now
-  // So: lastCalendarMonth = lastMonth - thisMonth (the complete previous month)
+  // Last calendar month: lastMonth - thisMonth
   const thisUp = stats.thisMonth ? stats.thisMonth.up : 0;
   const thisDown = stats.thisMonth ? stats.thisMonth.down : 0;
   const lastUp = stats.lastMonth ? stats.lastMonth.up : 0;
@@ -129,161 +161,120 @@ function buildMonthlyHtml(user, stats, publicUrl) {
   const monthDown = Math.max(0, lastDown - thisDown);
   const monthTotal = monthUp + monthDown;
 
-  // No prior month for comparison (would need 3 months of data)
-
-  // Today traffic
+  // Today
   const todayUp = stats.today.up || 0;
   const todayDown = stats.today.down || 0;
   const todayTotal = todayUp + todayDown;
 
-  // Comparison: show thisMonth (current period, just started) for reference
-  let compareHtml = '';
-  const currentPeriodUp = stats.month ? stats.month.up : 0;
-  const currentPeriodDown = stats.month ? stats.month.down : 0;
-  const currentPeriodTotal = currentPeriodUp + currentPeriodDown;
-  if (currentPeriodTotal > 0) {
-    compareHtml = `
-      <div class="section">
-        <div class="section-title">当前计费周期（x-ui）</div>
-        <div class="stat-grid">
-          <div class="stat-item">
-            <div class="stat-value">${formatBytes(currentPeriodUp)}</div>
-            <div class="stat-label">↑ 上传</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value">${formatBytes(currentPeriodDown)}</div>
-            <div class="stat-label">↓ 下载</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value">${formatBytes(currentPeriodTotal)}</div>
-            <div class="stat-label">合计</div>
-          </div>
-        </div>
-      </div>`;
-  }
+  // Current x-ui billing period
+  const curUp = stats.month ? stats.month.up : 0;
+  const curDown = stats.month ? stats.month.down : 0;
+  const curTotal = curUp + curDown;
 
-  // Quota section
-  let quotaHtml = '';
+  let parts = [];
+  parts.push(wrapperStart('月度报告'));
+  parts.push(greeting(`Hi ${escHtml(user.name)}，这是你的 ${reportLabel} 流量报告`));
+
+  // Quota
   if (hasQuota) {
-    quotaHtml = `
-      <div class="section">
-        <div class="section-title">配额使用</div>
-        ${progressBar(usedPct)}
-        <div style="display:flex; justify-content:space-between; font-size:12px;">
-          <span>${formatBytes(usedBytes)} 已用</span>
-          <span style="color:${pctColor(usedPct)}">${usedPct.toFixed(1)}%</span>
-          <span>${formatBytes(quotaBytes)} 总量</span>
-        </div>
-      </div>`;
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(sectionStart('配额使用'));
+    parts.push(progressBar(usedPct));
+    parts.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
+<td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT};">${formatBytes(usedBytes)} 已用</td>
+<td style="text-align:center;font-family:'Courier New',monospace;font-size:12px;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
+<td style="text-align:right;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT};">${formatBytes(quotaBytes)} 总量</td>
+</tr></table>`);
+    parts.push(sectionEnd);
+    parts.push(`</td></tr>`);
   }
 
-  // Expiry section
-  let expiryHtml = '';
+  // Monthly traffic
+  parts.push(`<tr><td style="padding-bottom:12px;">`);
+  parts.push(sectionStart(`${reportMonth} 月流量`));
+  parts.push(statGrid([
+    { value: formatBytes(monthUp), label: '↑ 上传' },
+    { value: formatBytes(monthDown), label: '↓ 下载' },
+    { value: formatBytes(monthTotal), label: '合计' },
+  ]));
+  parts.push(sectionEnd);
+  parts.push(`</td></tr>`);
+
+  // Current billing period
+  if (curTotal > 0) {
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(sectionStart('当前计费周期'));
+    parts.push(statGrid([
+      { value: formatBytes(curUp), label: '↑ 上传' },
+      { value: formatBytes(curDown), label: '↓ 下载' },
+      { value: formatBytes(curTotal), label: '合计' },
+    ]));
+    parts.push(sectionEnd);
+    parts.push(`</td></tr>`);
+  }
+
+  // Today traffic
+  parts.push(`<tr><td style="padding-bottom:12px;">`);
+  parts.push(sectionStart('今日流量'));
+  parts.push(statGrid([
+    { value: formatBytes(todayUp), label: '↑ 上传' },
+    { value: formatBytes(todayDown), label: '↓ 下载' },
+    { value: formatBytes(todayTotal), label: '合计' },
+  ]));
+  parts.push(sectionEnd);
+  parts.push(`</td></tr>`);
+
+  // Account info
+  parts.push(`<tr><td style="padding-bottom:12px;">`);
+  parts.push(sectionStart('账号信息'));
+  const rows = [];
+  if (node.remark) rows.push(detailRow('节点', escHtml(node.remark)));
+  rows.push(detailRow('累计用量', formatBytes(usedBytes)));
+  rows.push(detailRow('上传 / 下载', `${formatBytes(stats.total.up || 0)} / ${formatBytes(stats.total.down || 0)}`));
   if (node.expiryTime && node.expiryTime > 0) {
     const daysLeft = Math.max(0, Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24)));
     const expDate = new Date(node.expiryTime).toLocaleDateString('zh-CN');
-    expiryHtml = `
-      <div class="detail-row">
-        <span class="detail-label">到期时间</span>
-        <span class="detail-value">${expDate}（${daysLeft > 0 ? '剩余 ' + daysLeft + ' 天' : '已到期'}）</span>
-      </div>`;
+    rows.push(detailRowLast('到期时间', `${expDate}（${daysLeft > 0 ? '剩余 ' + daysLeft + ' 天' : '已到期'}）`));
+  } else {
+    // Fix: make last row without border
+    rows.push(detailRowLast('上传 / 下载', `${formatBytes(stats.total.up || 0)} / ${formatBytes(stats.total.down || 0)}`));
   }
+  parts.push(rows.join(''));
+  parts.push(sectionEnd);
+  parts.push(`</td></tr>`);
 
-  // Subscription link section
-  let subHtml = '';
+  // Clash subscription link
   const clashUrl = stats.clashConfig && publicUrl
     ? `${publicUrl}/sub/clash?token=${encodeURIComponent(user.token)}`
     : null;
   if (clashUrl) {
-    subHtml = `
-      <div class="section">
-        <div class="section-title">Clash 订阅链接</div>
-        <div class="link-box">${clashUrl}</div>
-        <div class="link-hint">在 Clash Verge 中添加订阅，或复制链接后打开 Clash Verge 导入</div>
-      </div>`;
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(sectionStart('Clash 订阅链接'));
+    parts.push(linkBox(clashUrl));
+    parts.push(`<div style="padding-top:6px;font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_DIM};">在 Clash Verge 中添加订阅，或复制链接后导入</div>`);
+    parts.push(sectionEnd);
+    parts.push(`</td></tr>`);
   }
 
   // Dashboard link
-  let dashHtml = '';
   if (publicUrl && user.token) {
-    dashHtml = `
-      <div class="section" style="text-align:center;">
-        <a href="${publicUrl}/#t=${encodeURIComponent(user.token)}" style="color:#00f0ff; text-decoration:none; font-size:14px;">
-          → 查看实时流量看板
-        </a>
-      </div>`;
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(sectionStart(''));
+    parts.push(`<div style="text-align:center;"><a href="${publicUrl}/#t=${encodeURIComponent(user.token)}" style="font-family:-apple-system,sans-serif;font-size:14px;color:${CYAN};text-decoration:none;">→ 查看实时流量看板</a></div>`);
+    parts.push(sectionEnd);
+    parts.push(`</td></tr>`);
   }
 
-  const body = `
-    <div class="greeting">Hi ${escHtml(user.name)}，这是你的 ${reportLabel} 流量报告</div>
-
-    ${quotaHtml}
-
-    <div class="section">
-      <div class="section-title">本月流量</div>
-      <div class="stat-grid">
-        <div class="stat-item">
-          <div class="stat-value">${formatBytes(monthUp)}</div>
-          <div class="stat-label">↑ 上传</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">${formatBytes(monthDown)}</div>
-          <div class="stat-label">↓ 下载</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">${formatBytes(monthTotal)}</div>
-          <div class="stat-label">合计</div>
-        </div>
-      </div>
-    </div>
-
-    ${compareHtml}
-
-    <div class="section">
-      <div class="section-title">今日流量</div>
-      <div class="stat-grid">
-        <div class="stat-item">
-          <div class="stat-value">${formatBytes(todayUp)}</div>
-          <div class="stat-label">↑ 上传</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">${formatBytes(todayDown)}</div>
-          <div class="stat-label">↓ 下载</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">${formatBytes(todayTotal)}</div>
-          <div class="stat-label">合计</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">账号信息</div>
-      ${node.remark ? `<div class="detail-row"><span class="detail-label">节点</span><span class="detail-value">${escHtml(node.remark)}</span></div>` : ''}
-      <div class="detail-row">
-        <span class="detail-label">累计用量</span>
-        <span class="detail-value">${formatBytes(usedBytes)}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">上传 / 下载</span>
-        <span class="detail-value">${formatBytes(stats.total.up || 0)} / ${formatBytes(stats.total.down || 0)}</span>
-      </div>
-      ${expiryHtml}
-    </div>
-
-    ${subHtml}
-    ${dashHtml}
-  `;
-
-  return baseWrapper(body, '月度报告');
+  parts.push(wrapperEnd);
+  return parts.join('');
 }
 
 // ── Quota / Expiry warning email ──
 
 function buildWarningHtml(user, stats, type) {
   const node = stats.node || {};
-  let alertHtml = '';
-  let body = '';
+  let parts = [];
+  parts.push(wrapperStart('预警通知'));
 
   if (type === 'quota') {
     const quotaBytes = node.totalGB * 1024 ** 3;
@@ -291,71 +282,66 @@ function buildWarningHtml(user, stats, type) {
     const usedPct = (usedBytes / quotaBytes) * 100;
     const remainBytes = Math.max(0, quotaBytes - usedBytes);
 
-    alertHtml = `<div class="alert-banner">⚠ 流量预警：已使用 ${usedPct.toFixed(1)}% 配额</div>`;
-    body = `
-      ${alertHtml}
-      <div class="greeting">Hi ${escHtml(user.name)}，你的代理账号流量即将用尽</div>
-      <div class="section">
-        <div class="section-title">配额状态</div>
-        ${progressBar(usedPct)}
-        <div style="display:flex; justify-content:space-between; font-size:12px;">
-          <span>${formatBytes(usedBytes)} 已用</span>
-          <span style="color:${pctColor(usedPct)}">${usedPct.toFixed(1)}%</span>
-          <span>${formatBytes(remainBytes)} 剩余</span>
-        </div>
-      </div>
-      <div class="section">
-        <div class="section-title">建议</div>
-        <div style="font-size:13px; color:#d4dae6; line-height:1.6;">
-          流量配额即将用完，如需继续使用请联系管理员充值或升级套餐。
-        </div>
-      </div>`;
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(alertBanner(`⚠ 流量预警：已使用 ${usedPct.toFixed(1)}% 配额`, 'quota'));
+    parts.push(`</td></tr>`);
+    parts.push(greeting(`Hi ${escHtml(user.name)}，你的代理账号流量即将用尽`));
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(sectionStart('配额状态'));
+    parts.push(progressBar(usedPct));
+    parts.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
+<td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT};">${formatBytes(usedBytes)} 已用</td>
+<td style="text-align:center;font-family:'Courier New',monospace;font-size:12px;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
+<td style="text-align:right;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT};">${formatBytes(remainBytes)} 剩余</td>
+</tr></table>`);
+    parts.push(sectionEnd);
+    parts.push(`</td></tr>`);
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(sectionStart('建议'));
+    parts.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">流量配额即将用完，如需继续使用请联系管理员充值或升级套餐。</div>`);
+    parts.push(sectionEnd);
+    parts.push(`</td></tr>`);
   } else if (type === 'expiry') {
     const daysLeft = Math.max(0, Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24)));
     const expDate = new Date(node.expiryTime).toLocaleDateString('zh-CN');
 
-    alertHtml = `<div class="alert-banner warn-banner">⏰ 到期预警：剩余 ${daysLeft} 天</div>`;
-    body = `
-      ${alertHtml}
-      <div class="greeting">Hi ${escHtml(user.name)}，你的代理账号即将到期</div>
-      <div class="section">
-        <div class="section-title">到期信息</div>
-        <div class="detail-row">
-          <span class="detail-label">到期日期</span>
-          <span class="detail-value">${expDate}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">剩余天数</span>
-          <span class="detail-value">${daysLeft} 天</span>
-        </div>
-      </div>
-      <div class="section">
-        <div class="section-title">建议</div>
-        <div style="font-size:13px; color:#d4dae6; line-height:1.6;">
-          账号即将到期，如需继续使用请联系管理员续费。
-        </div>
-      </div>`;
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(alertBanner(`⏰ 到期预警：剩余 ${daysLeft} 天`, 'expiry'));
+    parts.push(`</td></tr>`);
+    parts.push(greeting(`Hi ${escHtml(user.name)}，你的代理账号即将到期`));
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(sectionStart('到期信息'));
+    parts.push(detailRow('到期日期', expDate));
+    parts.push(detailRowLast('剩余天数', `${daysLeft} 天`));
+    parts.push(sectionEnd);
+    parts.push(`</td></tr>`);
+    parts.push(`<tr><td style="padding-bottom:12px;">`);
+    parts.push(sectionStart('建议'));
+    parts.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">账号即将到期，如需继续使用请联系管理员续费。</div>`);
+    parts.push(sectionEnd);
+    parts.push(`</td></tr>`);
   }
 
-  return baseWrapper(body, '预警通知');
+  parts.push(wrapperEnd);
+  return parts.join('');
 }
 
 // ── Test email ──
 
 function buildTestHtml(user) {
-  const body = `
-    <div class="greeting">Hi ${escHtml(user.name)}，这是一封测试邮件</div>
-    <div class="section">
-      <div class="section-title">邮件服务状态</div>
-      <div style="text-align:center; padding:20px 0;">
-        <div style="font-size:28px; color:#00f0ff;">✓ 正常</div>
-        <div style="font-size:12px; color:#4a5568; margin-top:8px;">
-          shareV 邮件通知服务已成功配置
-        </div>
-      </div>
-    </div>`;
-
-  return baseWrapper(body, '测试邮件');
+  let parts = [];
+  parts.push(wrapperStart('测试邮件'));
+  parts.push(greeting(`Hi ${escHtml(user.name)}，这是一封测试邮件`));
+  parts.push(`<tr><td style="padding-bottom:12px;">`);
+  parts.push(sectionStart('邮件服务状态'));
+  parts.push(`<div style="text-align:center;padding:16px 0;">
+<div style="font-size:28px;color:${CYAN};">✓ 正常</div>
+<div style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_DIM};padding-top:8px;">shareV 邮件通知服务已成功配置</div>
+</div>`);
+  parts.push(sectionEnd);
+  parts.push(`</td></tr>`);
+  parts.push(wrapperEnd);
+  return parts.join('');
 }
 
 // ── Send functions ──
