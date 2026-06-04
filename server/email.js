@@ -60,13 +60,13 @@ function wrapperStart(title) {
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:${BG};">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:${BG};"><tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
 
 <!-- Header bar -->
-<tr><td style="background:${PRIMARY};padding:28px 32px;border-radius:0;">
+<tr><td style="background:${PRIMARY};padding:24px 20px;">
   <table width="100%" cellpadding="0" cellspacing="0"><tr>
-    <td style="font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">shareV</td>
-    <td style="text-align:right;font-family:-apple-system,'Helvetica Neue',sans-serif;font-size:12px;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;">${title}</td>
+    <td style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">shareV</td>
+    <td style="text-align:right;font-family:-apple-system,sans-serif;font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;">${title}</td>
   </tr></table>
 </td></tr>
 
@@ -101,7 +101,7 @@ function greeting(text) {
 
 function sectionStart(title) {
   return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;background:${CARD};border:1px solid ${BORDER};border-radius:8px;">
-<tr><td style="padding:20px 24px;">
+<tr><td style="padding:16px 16px;">
 ${title ? `<div style="font-family:-apple-system,sans-serif;font-size:11px;font-weight:600;color:${PRIMARY};text-transform:uppercase;letter-spacing:1.5px;padding-bottom:14px;">${title}</div>` : ''}`;
 }
 
@@ -109,13 +109,12 @@ const sectionEnd = `</td></tr></table>`;
 
 function statGrid(items) {
   const cols = items.length;
-  // Use a nested table with equal fixed widths for reliable column alignment
   let rows = `<table width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;"><tr>`;
   for (const item of items) {
     const color = item.color || TEXT_DARK;
-    rows += `<td style="text-align:center;vertical-align:top;padding:4px 8px;">
-      <div style="font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:${color};line-height:1.2;white-space:nowrap;">${item.value}</div>
-      <div style="font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_LIGHT};padding-top:6px;">${item.label}</div>
+    rows += `<td style="text-align:center;vertical-align:top;padding:4px 4px;">
+      <div style="font-family:'Courier New',Courier,monospace;font-size:18px;font-weight:700;color:${color};line-height:1.2;">${item.value}</div>
+      <div style="font-family:-apple-system,sans-serif;font-size:10px;color:${TEXT_LIGHT};padding-top:4px;">${item.label}</div>
     </td>`;
   }
   rows += '</tr></table>';
