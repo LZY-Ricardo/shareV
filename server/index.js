@@ -165,10 +165,16 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
     );
     // subscription-userinfo header for Clash traffic display
     if (stats.node) {
-      const upload = stats.total.up || 0;
-      const download = stats.total.down || 0;
+      // Use billing period traffic (8th-based), not all-time total
+      const upload = stats.thisMonth ? stats.thisMonth.up : 0;
+      const download = stats.thisMonth ? stats.thisMonth.down : 0;
       const total = stats.node.totalGB ? Math.round(stats.node.totalGB * 1024 * 1024 * 1024) : 0;
-      const expire = stats.node.expiryTime ? Math.floor(stats.node.expiryTime / 1000) : 0;
+      // Show next billing reset date (8th of next month) instead of account expiry
+      const now = new Date();
+      const nextReset = now.getDate() >= 8
+        ? new Date(now.getFullYear(), now.getMonth() + 1, 8)
+        : new Date(now.getFullYear(), now.getMonth(), 8);
+      const expire = Math.floor(nextReset.getTime() / 1000);
       res.setHeader("subscription-userinfo", `upload=${upload}; download=${download}; total=${total}; expire=${expire}`);
     }
     res.send(`${stats.clashConfig}\n`);
