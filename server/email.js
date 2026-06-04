@@ -124,12 +124,14 @@ function statGrid(items) {
 function progressBar(pct) {
   const color = pctColor(pct);
   const bgColor = '#e2e8f0';
+  const fillWidth = Math.min(100, pct).toFixed(1);
+  const emptyWidth = (100 - Math.min(100, pct)).toFixed(1);
   return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0;">
-<tr><td style="background:${bgColor};border-radius:6px;height:8px;">
-  <table cellpadding="0" cellspacing="0" style="height:8px;"><tr>
-    <td style="background:${color};border-radius:6px;width:${Math.min(100, pct).toFixed(1)}%;min-width:2px;"></td>
-  </tr></table>
-</td></tr></table>`;
+<tr>
+  <td width="${fillWidth}%" style="background:${color};height:8px;border-radius:6px 0 0 6px;font-size:0;line-height:0;">&nbsp;</td>
+  <td width="${emptyWidth}%" style="background:${bgColor};height:8px;border-radius:0 6px 6px 0;font-size:0;line-height:0;">&nbsp;</td>
+</tr>
+</table>`;
 }
 
 function detailRow(label, value, isLast) {
