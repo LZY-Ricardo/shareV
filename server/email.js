@@ -36,63 +36,86 @@ function escHtml(str) {
 }
 
 function pctColor(pct) {
-  if (pct > 90) return '#ff4757';
-  if (pct > 70) return '#ffa502';
-  return '#00f0ff';
+  if (pct > 90) return '#ef4444';
+  if (pct > 70) return '#f59e0b';
+  return '#0891b2';
 }
 
-// ── Inline-style building blocks (Gmail-safe, no <style>, no flex/grid) ──
+// ── Fresh inline-style building blocks (Gmail-safe) ──
 
-const BG = '#0a0e17';
-const CARD_BG = '#0e1422';
-const BORDER = '#1a2332';
-const CYAN = '#00f0ff';
-const TEXT = '#c8d0dc';
-const TEXT_DIM = '#5a6a7e';
-const TEXT_BRIGHT = '#eef1f8';
+const PRIMARY = '#0891b2';
+const PRIMARY_LIGHT = '#e0f7fa';
+const BG = '#f0f4f8';
+const WHITE = '#ffffff';
+const CARD = '#ffffff';
+const TEXT_DARK = '#1e293b';
+const TEXT = '#334155';
+const TEXT_LIGHT = '#64748b';
+const TEXT_MUTED = '#94a3b8';
+const BORDER = '#e2e8f0';
+const BORDER_LIGHT = '#f1f5f9';
 
 function wrapperStart(title) {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:${BG};">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:${BG};"><tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;padding:32px 24px;">
-<tr><td style="padding-bottom:4px;">
-  <span style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;font-size:22px;font-weight:700;color:${CYAN};letter-spacing:1px;">shareV</span>
-  <span style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;font-size:22px;font-weight:700;color:${TEXT_DIM};"> // ${title}</span>
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+<!-- Header bar -->
+<tr><td style="background:${PRIMARY};padding:28px 32px;border-radius:0;">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">shareV</td>
+    <td style="text-align:right;font-family:-apple-system,'Helvetica Neue',sans-serif;font-size:12px;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;">${title}</td>
+  </tr></table>
 </td></tr>
-<tr><td style="padding-bottom:28px;font-family:monospace;font-size:11px;color:${TEXT_DIM};letter-spacing:2px;">TRAFFIC MONITORING SYSTEM</td></tr>`;
+
+<!-- Spacer -->
+<tr><td style="height:24px;background:${BG};"></td></tr>
+
+<!-- Content area -->
+<tr><td style="padding:0 24px;">`;
 }
 
 const wrapperEnd = `
-<tr><td style="padding-top:28px;border-top:1px solid ${BORDER};text-align:center;font-family:-apple-system,sans-serif;font-size:11px;color:#3a3a3a;">
-  shareV · 流量监控看板<br>此邮件由系统自动发送，请勿回复
 </td></tr>
+
+<!-- Footer -->
+<tr><td style="padding:32px 24px 24px 24px;text-align:center;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td style="border-top:1px solid ${BORDER};padding-top:16px;font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_MUTED};text-align:center;">
+      shareV · 流量监控看板<br>此邮件由系统自动发送，请勿回复
+    </td></tr>
+  </table>
+</td></tr>
+
 </table>
 </td></tr></table>
 </body></html>`;
 
 function greeting(text) {
-  return `<tr><td style="padding-bottom:20px;font-family:-apple-system,sans-serif;font-size:15px;color:${TEXT_BRIGHT};line-height:1.5;">${text}</td></tr>`;
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;"><tr>
+<td style="font-family:-apple-system,'Helvetica Neue',sans-serif;font-size:15px;color:${TEXT};line-height:1.6;">${text}</td>
+</tr></table>`;
 }
 
 function sectionStart(title) {
-  return `<tr><td style="background:${CARD_BG};border:1px solid ${BORDER};border-radius:8px;padding:20px;margin-bottom:12px;">
-${title ? `<div style="font-family:monospace;font-size:10px;color:${TEXT_DIM};text-transform:uppercase;letter-spacing:2px;padding-bottom:12px;">${title}</div>` : ''}`;
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;background:${CARD};border:1px solid ${BORDER};border-radius:8px;">
+<tr><td style="padding:20px 24px;">
+${title ? `<div style="font-family:-apple-system,sans-serif;font-size:11px;font-weight:600;color:${PRIMARY};text-transform:uppercase;letter-spacing:1.5px;padding-bottom:14px;">${title}</div>` : ''}`;
 }
 
-const sectionEnd = `</td></tr>`;
+const sectionEnd = `</td></tr></table>`;
 
 function statGrid(items) {
-  // items: [{value, label, color?}]
   const cols = items.length;
   const cellWidth = Math.floor(100 / cols);
-  let rows = '<table width="100%" cellpadding="0" cellspacing="0"><tr>';
+  let rows = `<table width="100%" cellpadding="0" cellspacing="0"><tr>`;
   for (const item of items) {
-    const color = item.color || CYAN;
+    const color = item.color || TEXT_DARK;
     rows += `<td width="${cellWidth}%" style="text-align:center;padding:4px 0;">
-      <div style="font-family:'Courier New',monospace;font-size:20px;font-weight:700;color:${color};">${item.value}</div>
-      <div style="font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_DIM};padding-top:2px;">${item.label}</div>
+      <div style="font-family:Georgia,'Courier New',monospace;font-size:22px;font-weight:700;color:${color};line-height:1.2;">${item.value}</div>
+      <div style="font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_LIGHT};padding-top:4px;">${item.label}</div>
     </td>`;
   }
   rows += '</tr></table>';
@@ -101,40 +124,35 @@ function statGrid(items) {
 
 function progressBar(pct) {
   const color = pctColor(pct);
-  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0;">
-<tr><td style="background:#1a1a2e;border-radius:4px;height:8px;">
+  const bgColor = '#e2e8f0';
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0;">
+<tr><td style="background:${bgColor};border-radius:6px;height:8px;">
   <table cellpadding="0" cellspacing="0" style="height:8px;"><tr>
-    <td style="background:${color};border-radius:4px;width:${Math.min(100, pct).toFixed(1)}%;min-width:2px;"></td>
+    <td style="background:${color};border-radius:6px;width:${Math.min(100, pct).toFixed(1)}%;min-width:2px;"></td>
   </tr></table>
 </td></tr></table>`;
 }
 
-function detailRow(label, value) {
-  return `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid ${BORDER};"><tr>
-<td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT_DIM};">${label}</td>
-<td style="padding:6px 0;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:${TEXT_BRIGHT};">${value}</td>
-</tr></table>`;
-}
-
-function detailRowLast(label, value) {
-  return `<table width="100%" cellpadding="0" cellspacing="0"><tr>
-<td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT_DIM};">${label}</td>
-<td style="padding:6px 0;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:${TEXT_BRIGHT};">${value}</td>
+function detailRow(label, value, isLast) {
+  const borderBottom = isLast ? 'none' : `1px solid ${BORDER_LIGHT}`;
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:${borderBottom};"><tr>
+<td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT_LIGHT};">${label}</td>
+<td style="padding:8px 0;text-align:right;font-family:Georgia,'Courier New',monospace;font-size:13px;color:${TEXT_DARK};">${value}</td>
 </tr></table>`;
 }
 
 function linkBox(url) {
-  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;background:#0d1a24;border:1px solid #163040;border-radius:6px;">
-<tr><td style="padding:12px 14px;font-family:'Courier New',monospace;font-size:12px;color:${CYAN};word-break:break-all;line-height:1.5;">${url}</td></tr>
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;background:${PRIMARY_LIGHT};border:1px solid #b2ebf2;border-radius:6px;">
+<tr><td style="padding:12px 16px;font-family:'Courier New',monospace;font-size:12px;color:#00695c;word-break:break-all;line-height:1.5;">${url}</td></tr>
 </table>`;
 }
 
 function alertBanner(text, type) {
-  const bg = type === 'expiry' ? '#1f1a0d' : '#1f0d0d';
-  const border = type === 'expiry' ? '#3d2e10' : '#3d1010';
-  const color = type === 'expiry' ? '#ffa502' : '#ff4757';
-  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;background:${bg};border:1px solid ${border};border-radius:6px;">
-<tr><td style="padding:12px 16px;font-family:-apple-system,sans-serif;font-size:14px;font-weight:600;color:${color};">${text}</td></tr>
+  const bg = type === 'expiry' ? '#fef3c7' : '#fee2e2';
+  const border = type === 'expiry' ? '#fbbf24' : '#fca5a5';
+  const color = type === 'expiry' ? '#92400e' : '#991b1b';
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;background:${bg};border:1px solid ${border};border-radius:8px;">
+<tr><td style="padding:12px 16px;font-family:-apple-system,sans-serif;font-size:13px;font-weight:600;color:${color};">${text}</td></tr>
 </table>`;
 }
 
@@ -152,7 +170,6 @@ function buildMonthlyHtml(user, stats, publicUrl) {
   const usedBytes = (stats.total.up || 0) + (stats.total.down || 0);
   const usedPct = hasQuota ? (usedBytes / quotaBytes) * 100 : 0;
 
-  // Last calendar month: lastMonth - thisMonth
   const thisUp = stats.thisMonth ? stats.thisMonth.up : 0;
   const thisDown = stats.thisMonth ? stats.thisMonth.down : 0;
   const lastUp = stats.lastMonth ? stats.lastMonth.up : 0;
@@ -161,120 +178,103 @@ function buildMonthlyHtml(user, stats, publicUrl) {
   const monthDown = Math.max(0, lastDown - thisDown);
   const monthTotal = monthUp + monthDown;
 
-  // Today
   const todayUp = stats.today.up || 0;
   const todayDown = stats.today.down || 0;
   const todayTotal = todayUp + todayDown;
 
-  // Current x-ui billing period
   const curUp = stats.month ? stats.month.up : 0;
   const curDown = stats.month ? stats.month.down : 0;
   const curTotal = curUp + curDown;
 
-  let parts = [];
-  parts.push(wrapperStart('月度报告'));
-  parts.push(greeting(`Hi ${escHtml(user.name)}，这是你的 ${reportLabel} 流量报告`));
+  let p = [];
+  p.push(wrapperStart('月度报告'));
+  p.push(greeting(`Hi <strong style="color:${TEXT_DARK};">${escHtml(user.name)}</strong>，这是你的 <strong style="color:${TEXT_DARK};">${reportLabel}</strong> 流量报告`));
 
   // Quota
   if (hasQuota) {
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(sectionStart('配额使用'));
-    parts.push(progressBar(usedPct));
-    parts.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
-<td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT};">${formatBytes(usedBytes)} 已用</td>
-<td style="text-align:center;font-family:'Courier New',monospace;font-size:12px;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
-<td style="text-align:right;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT};">${formatBytes(quotaBytes)} 总量</td>
+    p.push(sectionStart('配额使用'));
+    p.push(progressBar(usedPct));
+    p.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
+<td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(usedBytes)} 已用</td>
+<td style="text-align:center;font-family:Georgia,monospace;font-size:12px;font-weight:600;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
+<td style="text-align:right;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(quotaBytes)} 总量</td>
 </tr></table>`);
-    parts.push(sectionEnd);
-    parts.push(`</td></tr>`);
+    p.push(sectionEnd);
   }
 
   // Monthly traffic
-  parts.push(`<tr><td style="padding-bottom:12px;">`);
-  parts.push(sectionStart(`${reportMonth} 月流量`));
-  parts.push(statGrid([
+  p.push(sectionStart(`${reportMonth} 月流量`));
+  p.push(statGrid([
     { value: formatBytes(monthUp), label: '↑ 上传' },
     { value: formatBytes(monthDown), label: '↓ 下载' },
     { value: formatBytes(monthTotal), label: '合计' },
   ]));
-  parts.push(sectionEnd);
-  parts.push(`</td></tr>`);
+  p.push(sectionEnd);
 
   // Current billing period
   if (curTotal > 0) {
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(sectionStart('当前计费周期'));
-    parts.push(statGrid([
+    p.push(sectionStart('当前计费周期'));
+    p.push(statGrid([
       { value: formatBytes(curUp), label: '↑ 上传' },
       { value: formatBytes(curDown), label: '↓ 下载' },
       { value: formatBytes(curTotal), label: '合计' },
     ]));
-    parts.push(sectionEnd);
-    parts.push(`</td></tr>`);
+    p.push(sectionEnd);
   }
 
   // Today traffic
-  parts.push(`<tr><td style="padding-bottom:12px;">`);
-  parts.push(sectionStart('今日流量'));
-  parts.push(statGrid([
+  p.push(sectionStart('今日流量'));
+  p.push(statGrid([
     { value: formatBytes(todayUp), label: '↑ 上传' },
     { value: formatBytes(todayDown), label: '↓ 下载' },
     { value: formatBytes(todayTotal), label: '合计' },
   ]));
-  parts.push(sectionEnd);
-  parts.push(`</td></tr>`);
+  p.push(sectionEnd);
 
   // Account info
-  parts.push(`<tr><td style="padding-bottom:12px;">`);
-  parts.push(sectionStart('账号信息'));
+  p.push(sectionStart('账号信息'));
   const rows = [];
-  if (node.remark) rows.push(detailRow('节点', escHtml(node.remark)));
-  rows.push(detailRow('累计用量', formatBytes(usedBytes)));
-  rows.push(detailRow('上传 / 下载', `${formatBytes(stats.total.up || 0)} / ${formatBytes(stats.total.down || 0)}`));
+  if (node.remark) rows.push(detailRow('节点', escHtml(node.remark), false));
+  rows.push(detailRow('累计用量', formatBytes(usedBytes), false));
   if (node.expiryTime && node.expiryTime > 0) {
     const daysLeft = Math.max(0, Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24)));
     const expDate = new Date(node.expiryTime).toLocaleDateString('zh-CN');
-    rows.push(detailRowLast('到期时间', `${expDate}（${daysLeft > 0 ? '剩余 ' + daysLeft + ' 天' : '已到期'}）`));
+    rows.push(detailRow('到期时间', `${expDate}（${daysLeft > 0 ? '剩余 ' + daysLeft + ' 天' : '已到期'}）`, true));
   } else {
-    // Fix: make last row without border
-    rows.push(detailRowLast('上传 / 下载', `${formatBytes(stats.total.up || 0)} / ${formatBytes(stats.total.down || 0)}`));
+    rows.push(detailRow('上传 / 下载', `${formatBytes(stats.total.up || 0)} / ${formatBytes(stats.total.down || 0)}`, true));
   }
-  parts.push(rows.join(''));
-  parts.push(sectionEnd);
-  parts.push(`</td></tr>`);
+  p.push(rows.join(''));
+  p.push(sectionEnd);
 
   // Clash subscription link
   const clashUrl = stats.clashConfig && publicUrl
     ? `${publicUrl}/sub/clash?token=${encodeURIComponent(user.token)}`
     : null;
   if (clashUrl) {
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(sectionStart('Clash 订阅链接'));
-    parts.push(linkBox(clashUrl));
-    parts.push(`<div style="padding-top:6px;font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_DIM};">在 Clash Verge 中添加订阅，或复制链接后导入</div>`);
-    parts.push(sectionEnd);
-    parts.push(`</td></tr>`);
+    p.push(sectionStart('Clash 订阅链接'));
+    p.push(linkBox(clashUrl));
+    p.push(`<div style="padding-top:8px;font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_MUTED};">在 Clash Verge 中添加订阅，或复制链接后导入</div>`);
+    p.push(sectionEnd);
   }
 
   // Dashboard link
   if (publicUrl && user.token) {
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(sectionStart(''));
-    parts.push(`<div style="text-align:center;"><a href="${publicUrl}/#t=${encodeURIComponent(user.token)}" style="font-family:-apple-system,sans-serif;font-size:14px;color:${CYAN};text-decoration:none;">→ 查看实时流量看板</a></div>`);
-    parts.push(sectionEnd);
-    parts.push(`</td></tr>`);
+    p.push(`<table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 0 0;background:${PRIMARY};border-radius:8px;">
+<tr><td style="padding:12px;text-align:center;">
+  <a href="${publicUrl}/#t=${encodeURIComponent(user.token)}" style="font-family:-apple-system,sans-serif;font-size:14px;color:#ffffff;text-decoration:none;font-weight:500;">查看实时流量看板 →</a>
+</td></tr></table>`);
   }
 
-  parts.push(wrapperEnd);
-  return parts.join('');
+  p.push(wrapperEnd);
+  return p.join('');
 }
 
 // ── Quota / Expiry warning email ──
 
 function buildWarningHtml(user, stats, type) {
   const node = stats.node || {};
-  let parts = [];
-  parts.push(wrapperStart('预警通知'));
+  let p = [];
+  p.push(wrapperStart('预警通知'));
 
   if (type === 'quota') {
     const quotaBytes = node.totalGB * 1024 ** 3;
@@ -282,66 +282,54 @@ function buildWarningHtml(user, stats, type) {
     const usedPct = (usedBytes / quotaBytes) * 100;
     const remainBytes = Math.max(0, quotaBytes - usedBytes);
 
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(alertBanner(`⚠ 流量预警：已使用 ${usedPct.toFixed(1)}% 配额`, 'quota'));
-    parts.push(`</td></tr>`);
-    parts.push(greeting(`Hi ${escHtml(user.name)}，你的代理账号流量即将用尽`));
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(sectionStart('配额状态'));
-    parts.push(progressBar(usedPct));
-    parts.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
-<td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT};">${formatBytes(usedBytes)} 已用</td>
-<td style="text-align:center;font-family:'Courier New',monospace;font-size:12px;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
-<td style="text-align:right;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT};">${formatBytes(remainBytes)} 剩余</td>
+    p.push(alertBanner(`⚠ 流量预警：已使用 ${usedPct.toFixed(1)}% 配额`, 'quota'));
+    p.push(greeting(`Hi <strong>${escHtml(user.name)}</strong>，你的代理账号流量即将用尽`));
+    p.push(sectionStart('配额状态'));
+    p.push(progressBar(usedPct));
+    p.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
+<td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(usedBytes)} 已用</td>
+<td style="text-align:center;font-family:Georgia,monospace;font-size:12px;font-weight:600;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
+<td style="text-align:right;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(remainBytes)} 剩余</td>
 </tr></table>`);
-    parts.push(sectionEnd);
-    parts.push(`</td></tr>`);
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(sectionStart('建议'));
-    parts.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">流量配额即将用完，如需继续使用请联系管理员充值或升级套餐。</div>`);
-    parts.push(sectionEnd);
-    parts.push(`</td></tr>`);
+    p.push(sectionEnd);
+    p.push(sectionStart('建议'));
+    p.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">流量配额即将用完，如需继续使用请联系管理员充值或升级套餐。</div>`);
+    p.push(sectionEnd);
   } else if (type === 'expiry') {
     const daysLeft = Math.max(0, Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24)));
     const expDate = new Date(node.expiryTime).toLocaleDateString('zh-CN');
 
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(alertBanner(`⏰ 到期预警：剩余 ${daysLeft} 天`, 'expiry'));
-    parts.push(`</td></tr>`);
-    parts.push(greeting(`Hi ${escHtml(user.name)}，你的代理账号即将到期`));
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(sectionStart('到期信息'));
-    parts.push(detailRow('到期日期', expDate));
-    parts.push(detailRowLast('剩余天数', `${daysLeft} 天`));
-    parts.push(sectionEnd);
-    parts.push(`</td></tr>`);
-    parts.push(`<tr><td style="padding-bottom:12px;">`);
-    parts.push(sectionStart('建议'));
-    parts.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">账号即将到期，如需继续使用请联系管理员续费。</div>`);
-    parts.push(sectionEnd);
-    parts.push(`</td></tr>`);
+    p.push(alertBanner(`⏰ 到期预警：剩余 ${daysLeft} 天`, 'expiry'));
+    p.push(greeting(`Hi <strong>${escHtml(user.name)}</strong>，你的代理账号即将到期`));
+    p.push(sectionStart('到期信息'));
+    p.push(detailRow('到期日期', expDate, false));
+    p.push(detailRow('剩余天数', `${daysLeft} 天`, true));
+    p.push(sectionEnd);
+    p.push(sectionStart('建议'));
+    p.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">账号即将到期，如需继续使用请联系管理员续费。</div>`);
+    p.push(sectionEnd);
   }
 
-  parts.push(wrapperEnd);
-  return parts.join('');
+  p.push(wrapperEnd);
+  return p.join('');
 }
 
 // ── Test email ──
 
 function buildTestHtml(user) {
-  let parts = [];
-  parts.push(wrapperStart('测试邮件'));
-  parts.push(greeting(`Hi ${escHtml(user.name)}，这是一封测试邮件`));
-  parts.push(`<tr><td style="padding-bottom:12px;">`);
-  parts.push(sectionStart('邮件服务状态'));
-  parts.push(`<div style="text-align:center;padding:16px 0;">
-<div style="font-size:28px;color:${CYAN};">✓ 正常</div>
-<div style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_DIM};padding-top:8px;">shareV 邮件通知服务已成功配置</div>
-</div>`);
-  parts.push(sectionEnd);
-  parts.push(`</td></tr>`);
-  parts.push(wrapperEnd);
-  return parts.join('');
+  let p = [];
+  p.push(wrapperStart('测试邮件'));
+  p.push(greeting(`Hi <strong>${escHtml(user.name)}</strong>，这是一封测试邮件`));
+  p.push(sectionStart('邮件服务状态'));
+  p.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
+<td style="text-align:center;padding:20px 0;">
+  <div style="font-size:36px;color:${PRIMARY};">✓</div>
+  <div style="font-family:Georgia,serif;font-size:18px;font-weight:700;color:${TEXT_DARK};padding-top:8px;">服务正常</div>
+  <div style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};padding-top:4px;">shareV 邮件通知服务已成功配置</div>
+</td></tr></table>`);
+  p.push(sectionEnd);
+  p.push(wrapperEnd);
+  return p.join('');
 }
 
 // ── Send functions ──
