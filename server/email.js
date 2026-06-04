@@ -114,7 +114,7 @@ function statGrid(items) {
   for (const item of items) {
     const color = item.color || TEXT_DARK;
     rows += `<td style="text-align:center;vertical-align:top;padding:4px 8px;">
-      <div style="font-family:Georgia,'Courier New',monospace;font-size:22px;font-weight:700;color:${color};line-height:1.2;white-space:nowrap;">${item.value}</div>
+      <div style="font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:${color};line-height:1.2;white-space:nowrap;">${item.value}</div>
       <div style="font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_LIGHT};padding-top:6px;">${item.label}</div>
     </td>`;
   }
@@ -137,7 +137,7 @@ function detailRow(label, value, isLast) {
   const borderBottom = isLast ? 'none' : `1px solid ${BORDER_LIGHT}`;
   return `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:${borderBottom};"><tr>
 <td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT_LIGHT};">${label}</td>
-<td style="padding:8px 0;text-align:right;font-family:Georgia,'Courier New',monospace;font-size:13px;color:${TEXT_DARK};">${value}</td>
+<td style="padding:8px 0;text-align:right;font-family:'Courier New',Courier,monospace;font-size:13px;color:${TEXT_DARK};">${value}</td>
 </tr></table>`;
 }
 
@@ -196,7 +196,7 @@ function buildMonthlyHtml(user, stats, publicUrl) {
     p.push(progressBar(usedPct));
     p.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
 <td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(usedBytes)} 已用</td>
-<td style="text-align:center;font-family:Georgia,monospace;font-size:12px;font-weight:600;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
+<td style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:600;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
 <td style="text-align:right;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(quotaBytes)} 总量</td>
 </tr></table>`);
     p.push(sectionEnd);
@@ -288,7 +288,7 @@ function buildWarningHtml(user, stats, type) {
     p.push(progressBar(usedPct));
     p.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
 <td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(usedBytes)} 已用</td>
-<td style="text-align:center;font-family:Georgia,monospace;font-size:12px;font-weight:600;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
+<td style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:600;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
 <td style="text-align:right;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(remainBytes)} 剩余</td>
 </tr></table>`);
     p.push(sectionEnd);
