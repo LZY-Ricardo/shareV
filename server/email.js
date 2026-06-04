@@ -109,13 +109,13 @@ const sectionEnd = `</td></tr></table>`;
 
 function statGrid(items) {
   const cols = items.length;
-  const cellWidth = Math.floor(100 / cols);
-  let rows = `<table width="100%" cellpadding="0" cellspacing="0"><tr>`;
+  // Use a nested table with equal fixed widths for reliable column alignment
+  let rows = `<table width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;"><tr>`;
   for (const item of items) {
     const color = item.color || TEXT_DARK;
-    rows += `<td width="${cellWidth}%" style="text-align:center;padding:4px 0;">
-      <div style="font-family:Georgia,'Courier New',monospace;font-size:22px;font-weight:700;color:${color};line-height:1.2;">${item.value}</div>
-      <div style="font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_LIGHT};padding-top:4px;">${item.label}</div>
+    rows += `<td style="text-align:center;vertical-align:top;padding:4px 8px;">
+      <div style="font-family:Georgia,'Courier New',monospace;font-size:22px;font-weight:700;color:${color};line-height:1.2;white-space:nowrap;">${item.value}</div>
+      <div style="font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_LIGHT};padding-top:6px;">${item.label}</div>
     </td>`;
   }
   rows += '</tr></table>';
