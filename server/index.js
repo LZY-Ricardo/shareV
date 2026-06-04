@@ -304,18 +304,20 @@ app.post('/api/admin/email/monthly', rateLimiter, requireAdmin, async (req, res)
       ? [userDirectory.findByToken(token)].filter(Boolean)
       : userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.notifyEmail);
 
-    const results = await Promise.allSettled(users.map(async (user) => {
-      if (!user.notifyEmail) return null;
-      const stats = await tracker.getUserStats(user.email);
-      await emailService.sendMonthlyReport(user, stats, config.publicUrl);
-      return { name: user.name, email: user.notifyEmail };
-    }));
-    const sent = results
-      .filter(r => r.status === 'fulfilled' && r.value)
-      .map(r => r.value);
-    const failed = results
-      .filter(r => r.status === 'rejected')
-      .map(r => ({ name: '?', error: r.reason?.message || String(r.reason) }));
+    const sent = [];
+    const failed = [];
+    for (const user of users) {
+      if (!user.notifyEmail) continue;
+      try {
+        const stats = await tracker.getUserStats(user.email);
+        await emailService.sendMonthlyReport(user, stats, config.publicUrl);
+        sent.push({ name: user.name, email: user.notifyEmail });
+      } catch (err) {
+        failed.push({ name: user.name, error: err.message });
+      }
+      // Rate limit: pause between emails to avoid Resend throttling
+      await new Promise(r => setTimeout(r, 300));
+    }
 
     console.log(`[shareV] Monthly report sent: ${sent.length}/${sent.length + failed.length}`);
     res.json({ sent, failed });
@@ -330,16 +332,13 @@ if (emailService.isEnabled()) {
   cron.schedule('0 9 8 * *', async () => {
     console.log('[shareV] Sending monthly reports...');
     const allUsers = userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.notifyEmail);
-    const results = await Promise.allSettled(allUsers.map(async (user) => {
-      const stats = await tracker.getUserStats(user.email);
-      await emailService.sendMonthlyReport(user, stats, config.publicUrl);
-      return user;
-    }));
-    for (const r of results) {
-      if (r.status === 'fulfilled') {
-        console.log(`[shareV] Monthly report sent to ${r.value.name} <${r.value.notifyEmail}>`);
-      } else {
-        console.error(`[shareV] Monthly report failed: ${r.reason?.message || r.reason}`);
+    for (const user of allUsers) {
+      try {
+        const stats = await tracker.getUserStats(user.email);
+        await emailService.sendMonthlyReport(user, stats, config.publicUrl);
+        console.log(`[shareV] Monthly report sent to ${user.name} <${user.notifyEmail}>`);
+      } catch (err) {
+        console.error(`[shareV] Monthly report failed for ${user.name}: ${err.message}`);
       }
     }
   });
