@@ -318,9 +318,9 @@ app.post('/api/admin/email/monthly', rateLimiter, requireAdmin, async (req, res)
   }
 });
 
-// ── Email: monthly report on the 1st of each month at 9am ──
+// ── Email: monthly report on the 8th of each month at 9am ──
 if (emailService.isEnabled()) {
-  cron.schedule('0 9 1 * *', async () => {
+  cron.schedule('0 9 8 * *', async () => {
     console.log('[shareV] Sending monthly reports...');
     const allUsers = userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.notifyEmail);
     const results = await Promise.allSettled(allUsers.map(async (user) => {
