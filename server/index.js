@@ -357,10 +357,12 @@ if (emailService.isEnabled()) {
         const stats = await tracker.getUserStats(user.email);
         const node = stats.node || {};
 
-        // Check quota warning (> 80%)
+        // Check quota warning (> 80% of billing period usage)
         if (node.totalGB && node.totalGB > 0) {
           const quotaBytes = node.totalGB * 1024 ** 3;
-          const usedBytes = (stats.total.up || 0) + (stats.total.down || 0);
+          const monthUp = stats.thisMonth ? stats.thisMonth.up : 0;
+          const monthDown = stats.thisMonth ? stats.thisMonth.down : 0;
+          const usedBytes = monthUp + monthDown;
           const usedPct = (usedBytes / quotaBytes) * 100;
           if (usedPct > 80 && lastWarningDate.get(user.email + ':quota') !== today) {
             await emailService.sendQuotaWarning(user, stats, 'quota');

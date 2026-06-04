@@ -168,13 +168,17 @@ function buildMonthlyHtml(user, stats, publicUrl) {
   const node = stats.node || {};
   const hasQuota = node.totalGB && node.totalGB > 0;
   const quotaBytes = hasQuota ? node.totalGB * 1024 ** 3 : 0;
-  const usedBytes = (stats.total.up || 0) + (stats.total.down || 0);
-  const usedPct = hasQuota ? (usedBytes / quotaBytes) * 100 : 0;
 
-  // thisMonth now uses billing period (8th-based), use directly
+  // Use billing period traffic for quota display (matches 100GB/month limit)
   const monthUp = stats.thisMonth ? stats.thisMonth.up : 0;
   const monthDown = stats.thisMonth ? stats.thisMonth.down : 0;
   const monthTotal = monthUp + monthDown;
+  const usedPct = hasQuota ? (monthTotal / quotaBytes) * 100 : 0;
+
+  // All-time total for reference
+  const totalUp = stats.total.up || 0;
+  const totalDown = stats.total.down || 0;
+  const totalBytes = totalUp + totalDown;
 
   const todayUp = stats.today.up || 0;
   const todayDown = stats.today.down || 0;
@@ -193,7 +197,7 @@ function buildMonthlyHtml(user, stats, publicUrl) {
     p.push(sectionStart('配额使用'));
     p.push(progressBar(usedPct));
     p.push(`<table width="100%" cellpadding="0" cellspacing="0"><tr>
-<td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(usedBytes)} 已用</td>
+<td style="font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(monthTotal)} 已用</td>
 <td style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:600;color:${pctColor(usedPct)};">${usedPct.toFixed(1)}%</td>
 <td style="text-align:right;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};">${formatBytes(quotaBytes)} 总量</td>
 </tr></table>`);
@@ -233,7 +237,8 @@ function buildMonthlyHtml(user, stats, publicUrl) {
   p.push(sectionStart('账号信息'));
   const rows = [];
   if (node.remark) rows.push(detailRow('节点', escHtml(node.remark), false));
-  rows.push(detailRow('累计用量', formatBytes(usedBytes), false));
+  rows.push(detailRow('本期用量', formatBytes(monthTotal), false));
+  rows.push(detailRow('累计总量', formatBytes(totalBytes), false));
   if (node.expiryTime && node.expiryTime > 0) {
     const daysLeft = Math.max(0, Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24)));
     const expDate = new Date(node.expiryTime).toLocaleDateString('zh-CN');
@@ -276,7 +281,9 @@ function buildWarningHtml(user, stats, type) {
 
   if (type === 'quota') {
     const quotaBytes = node.totalGB * 1024 ** 3;
-    const usedBytes = (stats.total.up || 0) + (stats.total.down || 0);
+    const monthUp = stats.thisMonth ? stats.thisMonth.up : 0;
+    const monthDown = stats.thisMonth ? stats.thisMonth.down : 0;
+    const usedBytes = monthUp + monthDown;
     const usedPct = (usedBytes / quotaBytes) * 100;
     const remainBytes = Math.max(0, quotaBytes - usedBytes);
 
