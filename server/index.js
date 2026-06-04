@@ -158,6 +158,7 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
 
     res.setHeader('content-type', 'text/yaml; charset=utf-8');
     res.setHeader('cache-control', 'no-store');
+    res.setHeader('profile-update-interval', '24'); // auto-refresh every 24 hours
     const filename = encodeURIComponent(getClashProfileFilename(user));
     res.setHeader(
       'content-disposition',
