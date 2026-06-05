@@ -118,7 +118,6 @@ async function getUserStats(email) {
 
   const latestSnapshot = db.getLatestSnapshot(email);
   let { up: totalUp, down: totalDown } = snapshotTrafficTotal(latestSnapshot);
-  let monthUp = 0, monthDown = 0;
   let nodeInfo = null;
   let configLink = null;
   let clashConfig = null;
@@ -140,8 +139,6 @@ async function getUserStats(email) {
       totalUp = totalTraffic.up;
       totalDown = totalTraffic.down;
     }
-    monthUp = liveClient.up || 0;
-    monthDown = liveClient.down || 0;
 
     // Get limitIp from settings.clients (not available in clientStats)
     let limitIp = 0;
@@ -206,7 +203,7 @@ async function getUserStats(email) {
 
   return {
     today: todayTraffic,
-    month: { up: monthUp, down: monthDown },
+    month: resolveMonthTraffic(liveClient, email),
     total: { up: totalUp, down: totalDown },
     thisMonth: thisMonthTraffic,
     lastMonth: lastMonthTraffic,
@@ -331,6 +328,16 @@ async function getLiveCounters(email) {
 
 const RANKING_PERIODS = new Set(['day', 'month', 'total']);
 
+// Billing-period counters when live and non-zero; otherwise snapshot delta since month start
+function resolveMonthTraffic(liveClient, email) {
+  if (liveClient) {
+    const up = liveClient.up || 0;
+    const down = liveClient.down || 0;
+    if (up + down > 0) return { up, down };
+  }
+  return db.getPeriodTraffic(email, db.getMonthStart());
+}
+
 function trafficForRankingPeriod(email, period, liveClient) {
   switch (period) {
     case 'day': {
@@ -338,12 +345,7 @@ function trafficForRankingPeriod(email, period, liveClient) {
       return { up: t.up, down: t.down, bytes: t.up + t.down };
     }
     case 'month': {
-      if (liveClient) {
-        const up = liveClient.up || 0;
-        const down = liveClient.down || 0;
-        return { up, down, bytes: up + down };
-      }
-      const t = db.getPeriodTraffic(email, db.getMonthStart());
+      const t = resolveMonthTraffic(liveClient, email);
       return { up: t.up, down: t.down, bytes: t.up + t.down };
     }
     case 'total':
@@ -436,6 +438,7 @@ module.exports = {
   ensureTodayBaselineSnapshot,
   getUserStats,
   getTrafficRanking,
+  resolveMonthTraffic,
   getLiveCounters,
   buildClashConfig,
 };

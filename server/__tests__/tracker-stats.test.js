@@ -181,4 +181,33 @@ describe('traffic tracker stats', () => {
     assert.equal(total.users[0].rank, 1);
     assert.equal(total.users[1].rank, 2);
   });
+
+  it('uses snapshot month traffic when live billing counters are zero', async () => {
+    const tracker = loadTracker({
+      inbounds: [{
+        protocol: 'tcp',
+        port: 443,
+        remark: 'node',
+        settings: '{}',
+        clientStats: [
+          { email: 'a@example.com', up: 0, down: 0, allTime: 1000, enable: true },
+        ],
+      }],
+      dbOverrides: {
+        getPeriodTraffic: (email, start) => {
+          if (start === 200) return { up: 80, down: 20 };
+          return { up: 0, down: 0 };
+        },
+      },
+    });
+
+    const stats = await tracker.getUserStats('a@example.com');
+    assert.deepEqual(stats.month, { up: 80, down: 20 });
+
+    const month = await tracker.getTrafficRanking(
+      [{ name: 'A', email: 'a@example.com', token: 't1' }],
+      'month'
+    );
+    assert.equal(month.users[0].bytes, 100);
+  });
 });

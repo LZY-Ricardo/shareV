@@ -3,7 +3,6 @@
   let users = [];
   let viewMode = 'users'; // users | ranking
   let rankingPeriod = 'day'; // day | month | total
-  let rankingData = null;
 
   const PERIOD_LABELS = { day: '今日', month: '本月', total: '总量' };
 
@@ -97,7 +96,14 @@
   }
 
   async function loadUsers() {
-    setContent('<div class="loading"><div class="loader-bar"></div></div>');
+    if (viewMode === 'ranking') {
+      const panel = document.querySelector('.admin-ranking-panel');
+      if (panel) {
+        panel.innerHTML = '<div class="loading"><div class="loader-bar"></div></div>';
+      }
+    } else {
+      setContent('<div class="loading"><div class="loader-bar"></div></div>');
+    }
     try {
       const data = await adminFetch('/api/admin/users');
       users = data.users || [];
@@ -173,7 +179,6 @@
 
     try {
       const data = await adminFetch(`/api/admin/traffic-ranking?period=${encodeURIComponent(period)}`);
-      rankingData = data;
       renderRanking(data);
     } catch (err) {
       if (err.message !== 'Unauthorized') {
@@ -289,7 +294,8 @@
     try {
       const data = await adminFetch(`/api/admin/stats?token=${encodeURIComponent(token)}`);
       const today = formatBytes(data.today.up + data.today.down);
-      const month = formatBytes((data.month?.up || 0) + (data.month?.down || 0));
+      const monthTraffic = data.month || { up: 0, down: 0 };
+      const month = formatBytes(monthTraffic.up + monthTraffic.down);
       const total = formatBytes(data.total.up + data.total.down);
 
       main.innerHTML = `
