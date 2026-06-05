@@ -7,8 +7,15 @@ const indexSource = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf
 const appSource = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'app.js'), 'utf8');
 
 describe('auth routes', () => {
+  it('exposes change-password and mustChangePassword in auth API', () => {
+    assert.match(indexSource, /app\.post\('\/api\/auth\/change-password',\s*authRateLimiter/);
+    assert.match(indexSource, /mustChangePassword:\s*auth\.userUsesDefaultPassword/);
+    assert.match(appSource, /showChangePasswordModal/);
+    assert.match(appSource, /\/api\/auth\/change-password/);
+  });
+
   it('rate limits auth endpoints before handlers run', () => {
-    for (const route of ['/api/auth/login', '/api/auth/token']) {
+    for (const route of ['/api/auth/login', '/api/auth/token', '/api/auth/change-password']) {
       const pattern = new RegExp(
         `app\\.post\\('${route.replace(/\//g, '\\/')}',\\s*authRateLimiter`
       );

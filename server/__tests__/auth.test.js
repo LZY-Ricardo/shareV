@@ -2,7 +2,14 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const { createDB } = require('../db');
 const { createUserDirectory } = require('../user-directory');
-const { createAuth, hashPassword, verifyPassword, auditUserPasswords, DEFAULT_USER_PASSWORD } = require('../auth');
+const {
+  createAuth,
+  hashPassword,
+  verifyPassword,
+  auditUserPasswords,
+  userUsesDefaultPassword,
+  DEFAULT_USER_PASSWORD,
+} = require('../auth');
 
 describe('auth', () => {
   it('hashes and verifies passwords', () => {
@@ -76,6 +83,47 @@ describe('auth', () => {
     const user = auth.getUserFromSession(sessionReq);
 
     assert.equal(user.email, 'vps3-Hua');
+  });
+
+  it('detects default password users', () => {
+    assert.equal(userUsesDefaultPassword({ email: 'a@x.com' }), true);
+    assert.equal(
+      userUsesDefaultPassword({ email: 'b@x.com', password: DEFAULT_USER_PASSWORD }),
+      true
+    );
+    assert.equal(
+      userUsesDefaultPassword({ email: 'c@x.com', password: 'other' }),
+      false
+    );
+    assert.equal(
+      userUsesDefaultPassword({ email: 'd@x.com', passwordHash: hashPassword('x') }),
+      false
+    );
+  });
+
+  it('changes password from default to a custom hash', () => {
+    const db = createDB(':memory:');
+    const directory = createUserDirectory({
+      'uuid-1': { name: 'Hua', email: 'a@example.com', token: 'tok' },
+    });
+    const auth = createAuth({ db, userDirectory: directory });
+    const user = directory.findByUuid('uuid-1');
+
+    const bad = auth.changeUserPassword(user, '000000', 'newpass1');
+    const weak = auth.changeUserPassword(user, DEFAULT_USER_PASSWORD, '123');
+    const sameDefault = auth.changeUserPassword(user, DEFAULT_USER_PASSWORD, DEFAULT_USER_PASSWORD);
+    const ok = auth.changeUserPassword(user, DEFAULT_USER_PASSWORD, 'newpass1');
+
+    assert.equal(bad.ok, false);
+    assert.equal(weak.ok, false);
+    assert.equal(sameDefault.ok, false);
+    assert.equal(ok.ok, true);
+    assert.match(ok.passwordHash, /^scrypt:/);
+    assert.equal(auth.userUsesDefaultPassword(user), true);
+
+    user.passwordHash = ok.passwordHash;
+    assert.equal(auth.userUsesDefaultPassword(user), false);
+    assert.equal(auth.loginUser('a@example.com', 'newpass1').ok, true);
   });
 
   it('audits users on default or plaintext passwords', () => {

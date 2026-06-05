@@ -52,6 +52,16 @@ function timingSafeEqualString(a, b) {
   return crypto.timingSafeEqual(left, right);
 }
 
+function userUsesDefaultPassword(user, defaultPassword = DEFAULT_USER_PASSWORD) {
+  if (!user) return false;
+  if (user.passwordHash) return false;
+  const plain = user.password;
+  if (plain != null && String(plain) !== '') {
+    return timingSafeEqualString(plain, defaultPassword);
+  }
+  return true;
+}
+
 function auditUserPasswords(users = {}) {
   const defaultPasswordUsers = [];
   const plainTextUsers = [];
@@ -153,6 +163,31 @@ function createAuth({ db, userDirectory, defaultPassword = DEFAULT_USER_PASSWORD
     return { ok: true, user };
   }
 
+  function validateNewPassword(newPassword) {
+    const value = String(newPassword || '');
+    if (value.length < 6) {
+      return { ok: false, error: '新密码至少 6 位' };
+    }
+    if (timingSafeEqualString(value, fallbackPassword)) {
+      return { ok: false, error: '新密码不能与初始密码相同' };
+    }
+    return { ok: true };
+  }
+
+  function changeUserPassword(user, currentPassword, newPassword) {
+    if (!user) return { ok: false, error: '未登录' };
+    if (!verifyUserPassword(currentPassword, user)) {
+      return { ok: false, error: '当前密码错误' };
+    }
+    const check = validateNewPassword(newPassword);
+    if (!check.ok) return check;
+    return { ok: true, passwordHash: hashPassword(newPassword) };
+  }
+
+  function isDefaultPasswordUser(user) {
+    return userUsesDefaultPassword(user, fallbackPassword);
+  }
+
   function cleanupExpiredSessions() {
     db.deleteExpiredSessions(Math.floor(Date.now() / 1000));
   }
@@ -167,6 +202,9 @@ function createAuth({ db, userDirectory, defaultPassword = DEFAULT_USER_PASSWORD
     getUserFromSession,
     loginUser,
     verifyUserPassword,
+    userUsesDefaultPassword: isDefaultPasswordUser,
+    validateNewPassword,
+    changeUserPassword,
     cleanupExpiredSessions,
     sessionMaxAgeSec: maxAgeSec,
     defaultPassword: fallbackPassword,
@@ -181,5 +219,6 @@ module.exports = {
   verifyPassword,
   parseCookies,
   auditUserPasswords,
+  userUsesDefaultPassword,
   createAuth,
 };

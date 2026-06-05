@@ -1,6 +1,7 @@
 (function () {
   let refreshTimer = null;
   let currentToken = '';
+  let mustChangePassword = false;
 
   const fetchOpts = { credentials: 'same-origin' };
 
@@ -42,6 +43,7 @@
       if (!res.ok) return false;
       const data = await res.json();
       currentToken = '';
+      mustChangePassword = !!data.mustChangePassword;
       if (data.user?.name) {
         document.getElementById('userName').textContent = data.user.name;
       }
@@ -60,6 +62,8 @@
         body: JSON.stringify({ token }),
       });
       if (!res.ok) return false;
+      const data = await res.json();
+      mustChangePassword = !!data.mustChangePassword;
       currentToken = token;
       localStorage.setItem('sharev_token', token);
       return true;
@@ -151,6 +155,7 @@
 
       currentToken = '';
       localStorage.removeItem('sharev_token');
+      mustChangePassword = !!data.mustChangePassword;
       showDashboard();
     } catch (err) {
       toast(err.message, 'error');
@@ -176,6 +181,91 @@
     loadStats();
     if (refreshTimer) clearInterval(refreshTimer);
     refreshTimer = setInterval(loadStats, 120000);
+    if (mustChangePassword) {
+      showChangePasswordModal();
+    }
+  }
+
+  function showChangePasswordModal() {
+    let overlay = document.getElementById('pwdChangeModal');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      return;
+    }
+
+    overlay = document.createElement('div');
+    overlay.id = 'pwdChangeModal';
+    overlay.className = 'pwd-modal-overlay';
+    overlay.innerHTML = `
+      <div class="pwd-modal" role="dialog" aria-labelledby="pwdModalTitle">
+        <div class="pwd-modal-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <h2 class="pwd-modal-title" id="pwdModalTitle">请修改初始密码</h2>
+        <p class="pwd-modal-desc">您仍在使用默认密码（123456），为保障账号安全请立即修改。</p>
+        <form class="login-form login-form-stacked pwd-modal-form" id="changePasswordForm">
+          <input type="password" id="pwdCurrent" placeholder="当前密码" autocomplete="current-password" required />
+          <input type="password" id="pwdNew" placeholder="新密码（至少 6 位）" autocomplete="new-password" required />
+          <input type="password" id="pwdConfirm" placeholder="确认新密码" autocomplete="new-password" required />
+          <button type="submit" id="pwdSubmitBtn">保存新密码</button>
+        </form>
+        <button type="button" class="pwd-modal-later" id="pwdLaterBtn">稍后再说</button>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#pwdLaterBtn').addEventListener('click', () => {
+      overlay.style.display = 'none';
+    });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.style.display = 'none';
+    });
+
+    const form = overlay.querySelector('#changePasswordForm');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleChangePassword();
+    });
+
+    overlay.querySelector('#pwdCurrent').focus();
+  }
+
+  async function handleChangePassword() {
+    const currentPassword = document.getElementById('pwdCurrent').value;
+    const newPassword = document.getElementById('pwdNew').value;
+    const confirm = document.getElementById('pwdConfirm').value;
+    if (!currentPassword || !newPassword) return;
+    if (newPassword !== confirm) {
+      toast('两次输入的新密码不一致', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('pwdSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = '保存中...';
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        ...fetchOpts,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '修改失败');
+
+      mustChangePassword = false;
+      const overlay = document.getElementById('pwdChangeModal');
+      if (overlay) overlay.remove();
+      toast('密码已更新', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '保存新密码';
+    }
   }
 
   async function loadStats() {
@@ -874,7 +964,10 @@
       await fetch('/api/auth/logout', { ...fetchOpts, method: 'POST' });
     } catch { /* ignore */ }
     currentToken = '';
+    mustChangePassword = false;
     localStorage.removeItem('sharev_token');
+    const pwdModal = document.getElementById('pwdChangeModal');
+    if (pwdModal) pwdModal.remove();
     location.hash = '';
     if (refreshTimer) clearInterval(refreshTimer);
     if (speedPollTimer) clearInterval(speedPollTimer);

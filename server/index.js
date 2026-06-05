@@ -190,6 +190,31 @@ function publicUserPayload(user) {
   };
 }
 
+function authSessionPayload(user) {
+  return {
+    user: publicUserPayload(user),
+    mustChangePassword: auth.userUsesDefaultPassword(user),
+  };
+}
+
+function saveConfig() {
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+}
+
+function applyUserPasswordHash(uuid, passwordHash) {
+  const cfgUser = config.users[uuid];
+  if (!cfgUser) return false;
+  cfgUser.passwordHash = passwordHash;
+  delete cfgUser.password;
+  const entry = userDirectory.findByUuid(uuid);
+  if (entry) {
+    entry.passwordHash = passwordHash;
+    delete entry.password;
+  }
+  saveConfig();
+  return true;
+}
+
 function getBaseUrl(req) {
   return resolvePublicUrl(config, req);
 }
@@ -236,7 +261,7 @@ app.post('/api/auth/login', authRateLimiter, async (req, res) => {
   }
 
   auth.createUserSession(result.user.uuid, req, res);
-  res.json({ user: publicUserPayload(result.user) });
+  res.json(authSessionPayload(result.user));
 });
 
 app.post('/api/auth/token', authRateLimiter, async (req, res) => {
@@ -249,7 +274,32 @@ app.post('/api/auth/token', authRateLimiter, async (req, res) => {
     return res.status(401).json({ error: '访问码无效' });
   }
   auth.createUserSession(user.uuid, req, res);
-  res.json({ user: publicUserPayload(user) });
+  res.json(authSessionPayload(user));
+});
+
+app.post('/api/auth/change-password', authRateLimiter, (req, res) => {
+  const user = auth.getUserFromSession(req);
+  if (!user) {
+    return res.status(401).json({ error: '未登录' });
+  }
+
+  const currentPassword = req.body?.currentPassword || '';
+  const newPassword = req.body?.newPassword || '';
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: '请填写当前密码和新密码' });
+  }
+
+  const result = auth.changeUserPassword(user, currentPassword, newPassword);
+  if (!result.ok) {
+    const status = result.error === '当前密码错误' ? 401 : 400;
+    return res.status(status).json({ error: result.error });
+  }
+
+  if (!applyUserPasswordHash(user.uuid, result.passwordHash)) {
+    return res.status(500).json({ error: '保存密码失败' });
+  }
+
+  res.json({ success: true, mustChangePassword: false });
 });
 
 app.post('/api/auth/logout', rateLimiter, (req, res) => {
@@ -262,7 +312,7 @@ app.get('/api/auth/me', rateLimiter, (req, res) => {
   if (!user) {
     return res.status(401).json({ error: '未登录' });
   }
-  res.json({ user: publicUserPayload(user) });
+  res.json(authSessionPayload(user));
 });
 
 // ── API: Get stats by user session or access token ──
@@ -413,12 +463,8 @@ async function syncClientsFromXui() {
           userChanged = true;
         }
         if (name && user.name !== name) {
-          // Keep manual display casing (e.g. Hua) when 3X-UI comment only differs by case (hua)
-          const sameIgnoringCase = user.name.toLowerCase() === name.toLowerCase();
-          if (!sameIgnoringCase) {
-            user.name = name;
-            userChanged = true;
-          }
+          user.name = name; // display name follows 3X-UI comment
+          userChanged = true;
         }
         if (user.notifyEmail) {
           delete user.notifyEmail;
