@@ -158,7 +158,7 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
 
     res.setHeader('content-type', 'text/yaml; charset=utf-8');
     res.setHeader('cache-control', 'no-store');
-    res.setHeader('profile-update-interval', '24'); // auto-refresh every 24 hours
+    res.setHeader('profile-update-interval', '6'); // auto-refresh every 6 hours
     const filename = encodeURIComponent(getClashProfileFilename(user));
     res.setHeader(
       'content-disposition',
@@ -347,7 +347,9 @@ if (emailService.isEnabled()) {
   cron.schedule('0 9 * * *', async () => {
     console.log('[shareV] Checking warning conditions...');
     const allUsers = userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] }));
-    const today = new Date().toISOString().slice(0, 10);
+    // Local-timezone date string (YYYY-MM-DD) for per-day dedup
+    const n = new Date();
+    const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
 
     for (const user of allUsers) {
       if (!user.notifyEmail) continue;
@@ -369,10 +371,10 @@ if (emailService.isEnabled()) {
           }
         }
 
-        // Check expiry warning (< 7 days)
+        // Check expiry warning (<= 7 days, including already-expired)
         if (node.expiryTime && node.expiryTime > 0) {
           const daysLeft = Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24));
-          if (daysLeft <= 7 && daysLeft >= 0 && lastWarningDate.get(user.email + ':expiry') !== today) {
+          if (daysLeft <= 7 && lastWarningDate.get(user.email + ':expiry') !== today) {
             await emailService.sendQuotaWarning(user, stats, 'expiry');
             lastWarningDate.set(user.email + ':expiry', today);
             console.log(`[shareV] Expiry warning sent to ${user.name} (${daysLeft} days left)`);
