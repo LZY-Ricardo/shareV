@@ -1,6 +1,11 @@
 (function () {
   let adminToken = sessionStorage.getItem('sharev_admin_token') || '';
   let users = [];
+  let viewMode = 'users'; // users | ranking
+  let rankingPeriod = 'day'; // day | month | total
+  let rankingData = null;
+
+  const PERIOD_LABELS = { day: '今日', month: '本月', total: '总量' };
 
   if (adminToken) {
     document.body.classList.add('admin-page');
@@ -96,7 +101,11 @@
     try {
       const data = await adminFetch('/api/admin/users');
       users = data.users || [];
-      renderUsers();
+      if (viewMode === 'ranking') {
+        await loadRanking(rankingPeriod, false);
+      } else {
+        renderUsers();
+      }
     } catch (err) {
       if (err.message !== 'Unauthorized') showError(err.message);
     }
@@ -104,10 +113,28 @@
 
   window.loadUsers = loadUsers;
 
-  function renderUsers() {
+  function renderPageHeader(subtitle) {
     const onlineCount = users.filter(u => u.online).length;
     const totalCount = users.length;
+    return `
+      <div class="admin-page-header">
+        <div>
+          <h1 class="admin-page-title">用户管理</h1>
+          <div class="admin-page-subtitle">${subtitle || `${onlineCount} 在线 · ${totalCount} 用户`}</div>
+        </div>
+        <div class="admin-page-actions">
+          <div class="admin-view-tabs">
+            <button type="button" class="admin-view-tab ${viewMode === 'users' ? 'active' : ''}" data-action="view-users">用户列表</button>
+            <button type="button" class="admin-view-tab ${viewMode === 'ranking' ? 'active' : ''}" data-action="view-ranking">流量排行</button>
+          </div>
+          <button data-action="sync">同步客户端</button>
+          <button data-action="snapshot">快照</button>
+          <button data-action="logout" class="btn-ghost">退出</button>
+        </div>
+      </div>`;
+  }
 
+  function renderUsers() {
     const userList = users.map((user, i) => `
       <div class="admin-user" style="--i:${i}" data-action="view" data-token="${escAttr(user.token)}">
         <span class="status-dot ${user.online ? 'online' : ''}"></span>
@@ -119,17 +146,7 @@
     `).join('');
 
     setContent(`
-      <div class="admin-page-header">
-        <div>
-          <h1 class="admin-page-title">用户管理</h1>
-          <div class="admin-page-subtitle">${onlineCount} 在线 · ${totalCount} 用户</div>
-        </div>
-        <div class="admin-page-actions">
-          <button data-action="sync">同步客户端</button>
-          <button data-action="snapshot">快照</button>
-          <button data-action="logout" class="btn-ghost">退出</button>
-        </div>
-      </div>
+      ${renderPageHeader()}
       <div class="admin-layout">
         <nav class="admin-sidebar">${userList}</nav>
         <div class="admin-main">
@@ -138,7 +155,92 @@
       </div>
     `);
 
-    document.getElementById('content').addEventListener('click', handleClick);
+    bindContentEvents();
+  }
+
+  async function loadRanking(period = rankingPeriod, rerender = true) {
+    viewMode = 'ranking';
+    rankingPeriod = period;
+    if (rerender) {
+      setContent(`
+        ${renderPageHeader('加载流量排行…')}
+        <div class="admin-ranking-panel">
+          <div class="loading"><div class="loader-bar"></div></div>
+        </div>
+      `);
+      bindContentEvents();
+    }
+
+    try {
+      const data = await adminFetch(`/api/admin/traffic-ranking?period=${encodeURIComponent(period)}`);
+      rankingData = data;
+      renderRanking(data);
+    } catch (err) {
+      if (err.message !== 'Unauthorized') {
+        setContent(`
+          ${renderPageHeader()}
+          <div class="error-msg"><div>ERR:: ${esc(err.message)}</div><button class="retry-btn" data-action="view-ranking">重试</button></div>
+        `);
+        bindContentEvents();
+      }
+    }
+  }
+
+  function renderRanking(data) {
+    const totalFmt = formatBytes(data.totalBytes || 0);
+    const updatedAt = data.updatedAt
+      ? new Date(data.updatedAt).toLocaleString('zh-CN')
+      : '';
+
+    const rows = (data.users || []).map((user) => {
+      const fmt = formatBytes(user.bytes || 0);
+      const sharePct = ((user.share || 0) * 100).toFixed(user.share > 0 && user.share < 0.01 ? 1 : 0);
+      const barPct = Math.max(user.bytes > 0 ? 2 : 0, Math.round((user.barPct || 0) * 100));
+      const rankClass = user.rank <= 3 ? ` top-${user.rank}` : '';
+      return `
+        <div class="admin-rank-row${rankClass}" data-action="view" data-token="${escAttr(user.token)}">
+          <div class="admin-rank-num">${user.rank}</div>
+          <div class="admin-rank-user">
+            <div class="admin-rank-name-row">
+              <span class="status-dot ${user.online ? 'online' : ''}"></span>
+              <span class="admin-rank-name">${esc(user.name)}</span>
+            </div>
+            <div class="admin-rank-email">${esc(user.email)}</div>
+          </div>
+          <div class="admin-rank-bar-wrap">
+            <div class="admin-rank-bar" style="width:${barPct}%"></div>
+          </div>
+          <div class="admin-rank-stats">
+            <div class="admin-rank-value">${fmt.value}<span class="unit">${fmt.unit}</span></div>
+            <div class="admin-rank-meta">占比 ${sharePct}% · ↑${formatCompact(user.up)} ↓${formatCompact(user.down)}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    setContent(`
+      ${renderPageHeader(`${PERIOD_LABELS[data.period] || '流量'}排行 · 合计 ${totalFmt.value} ${totalFmt.unit}`)}
+      <div class="admin-ranking-panel">
+        <div class="admin-ranking-toolbar">
+          <div class="admin-period-tabs">
+            ${['day', 'month', 'total'].map((p) => `
+              <button type="button" class="admin-period-tab ${data.period === p ? 'active' : ''}" data-action="rank-period" data-period="${p}">${PERIOD_LABELS[p]}</button>
+            `).join('')}
+          </div>
+          <div class="admin-ranking-meta">更新于 ${esc(updatedAt)}</div>
+        </div>
+        <div class="admin-ranking-list">
+          ${rows || '<div class="admin-empty">暂无用户数据</div>'}
+        </div>
+      </div>
+    `);
+
+    bindContentEvents();
+  }
+
+  function bindContentEvents() {
+    const content = document.getElementById('content');
+    if (!content) return;
+    content.onclick = handleClick;
   }
 
   function handleClick(e) {
@@ -152,22 +254,42 @@
       case 'snapshot': triggerSnapshot(btn); break;
       case 'sync': triggerSync(btn); break;
       case 'logout': handleAdminLogout(); break;
+      case 'view-users':
+        viewMode = 'users';
+        renderUsers();
+        break;
+      case 'view-ranking':
+        loadRanking(rankingPeriod);
+        break;
+      case 'rank-period':
+        loadRanking(btn.dataset.period);
+        break;
     }
   }
 
   async function viewUser(token) {
+    viewMode = 'users';
+    document.querySelectorAll('.admin-view-tab').forEach((el) => {
+      el.classList.toggle('active', el.dataset.action === 'view-users');
+    });
+
     document.querySelectorAll('.admin-user').forEach(el => {
       el.classList.toggle('active', el.dataset.token === token);
     });
 
     const main = document.querySelector('.admin-main');
-    if (!main) return;
+    if (!main) {
+      renderUsers();
+      await new Promise((r) => requestAnimationFrame(r));
+      return viewUser(token);
+    }
 
     main.innerHTML = '<div class="loading"><div class="loader-bar"></div></div>';
 
     try {
       const data = await adminFetch(`/api/admin/stats?token=${encodeURIComponent(token)}`);
       const today = formatBytes(data.today.up + data.today.down);
+      const month = formatBytes((data.month?.up || 0) + (data.month?.down || 0));
       const total = formatBytes(data.total.up + data.total.down);
 
       main.innerHTML = `
@@ -178,8 +300,8 @@
           </div>
           <div class="admin-detail-cards">
             ${detailCard('今日流量', today, 'cyan')}
-            ${detailCard('累计总量', total, 'green')}
-            ${detailCard('在线设备', { value: String(data.devices || 0), unit: '台' }, 'amber')}
+            ${detailCard('本月流量', month, 'green')}
+            ${detailCard('累计总量', total, 'amber')}
           </div>
           <div class="admin-detail-section">
             <div class="admin-detail-label">访问链接</div>
@@ -215,7 +337,11 @@
     try {
       await adminFetch('/api/admin/snapshot', { method: 'POST' });
       toast('快照完成');
-      loadUsers();
+      if (viewMode === 'ranking') {
+        loadRanking(rankingPeriod);
+      } else {
+        loadUsers();
+      }
     } catch (err) {
       toast(err.message, 'error');
       btn.classList.remove('loading');
@@ -234,7 +360,11 @@
       } else {
         toast('已是最新，无需同步');
       }
-      loadUsers();
+      if (viewMode === 'ranking') {
+        loadRanking(rankingPeriod);
+      } else {
+        loadUsers();
+      }
     } catch (err) {
       toast(err.message, 'error');
       btn.classList.remove('loading');
@@ -264,11 +394,16 @@
   }
 
   function formatBytes(bytes) {
-    if (bytes === 0) return { value: '0', unit: 'B' };
+    if (!bytes || bytes <= 0) return { value: '0', unit: 'B' };
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     const value = (bytes / Math.pow(1024, i)).toFixed(i > 1 ? 2 : 0);
     return { value, unit: units[i] };
+  }
+
+  function formatCompact(bytes) {
+    const f = formatBytes(bytes || 0);
+    return `${f.value}${f.unit}`;
   }
 
   function esc(s) {

@@ -7,12 +7,24 @@ const indexSource = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf
 
 describe('admin routes', () => {
   it('rate limits admin endpoints before auth checks', () => {
-    for (const route of ['/api/admin/users', '/api/admin/stats', '/api/admin/snapshot']) {
+    for (const route of [
+      '/api/admin/users',
+      '/api/admin/stats',
+      '/api/admin/traffic-ranking',
+      '/api/admin/snapshot',
+    ]) {
       const pattern = new RegExp(
         `app\\.(?:get|post)\\('${route.replace(/\//g, '\\/')}',\\s*rateLimiter,\\s*requireAdmin`
       );
       assert.match(indexSource, pattern);
     }
+  });
+
+  it('exposes admin traffic ranking endpoint and UI', () => {
+    assert.match(indexSource, /tracker\.getTrafficRanking\(entries, period\)/);
+    const adminSource = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'admin.js'), 'utf8');
+    assert.match(adminSource, /\/api\/admin\/traffic-ranking/);
+    assert.match(adminSource, /流量排行/);
   });
 
   it('exposes a Clash subscription URL for user stats responses', () => {

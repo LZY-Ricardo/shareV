@@ -14,7 +14,7 @@ function stubModule(path, exports) {
   };
 }
 
-function loadTracker({ inbounds, latestSnapshot = null, getInboundsError = null }) {
+function loadTracker({ inbounds, latestSnapshot = null, getInboundsError = null, dbOverrides = {} }) {
   delete require.cache[trackerPath];
 
   stubModule(xuiPath, {
@@ -22,18 +22,23 @@ function loadTracker({ inbounds, latestSnapshot = null, getInboundsError = null 
       if (getInboundsError) throw getInboundsError;
       return inbounds;
     },
-    getOnlineClients: async () => [],
+    getOnlineClients: async () => ['a@example.com'],
     getClientIps: async () => [],
   });
 
   stubModule(dbPath, {
-    getPeriodTraffic: () => ({ up: 0, down: 0 }),
+    getPeriodTraffic: (email, start) => {
+      if (start === 100) return { up: 50, down: 50 };
+      if (start === 200) return { up: 500, down: 500 };
+      return { up: 0, down: 0 };
+    },
     getDailyTraffic: () => [],
-    getTodayStart: () => 0,
-    getMonthStart: () => 0,
+    getTodayStart: () => 100,
+    getMonthStart: () => 200,
     getLastMonthStart: () => 0,
     getLatestSnapshot: () => latestSnapshot,
     getRecentSpeed: () => null,
+    ...dbOverrides,
   });
 
   return require('../traffic-tracker');
@@ -139,5 +144,41 @@ describe('traffic tracker stats', () => {
     const profile = tracker.buildClashConfig(inbound, client, { server: 'v.sunandyu.top' });
 
     assert.doesNotMatch(profile, /\n\s+flow:/);
+  });
+
+  it('ranks users by day, month, and total traffic', async () => {
+    const tracker = loadTracker({
+      inbounds: [{
+        protocol: 'tcp',
+        port: 443,
+        remark: 'node',
+        settings: '{}',
+        clientStats: [
+          { email: 'a@example.com', up: 1000, down: 2000, allTime: 9000, enable: true },
+          { email: 'b@example.com', up: 500, down: 500, allTime: 5000, enable: true },
+        ],
+      }],
+    });
+
+    const entries = [
+      { name: 'A', email: 'a@example.com', token: 't1' },
+      { name: 'B', email: 'b@example.com', token: 't2' },
+    ];
+
+    const day = await tracker.getTrafficRanking(entries, 'day');
+    assert.equal(day.period, 'day');
+    assert.equal(day.users[0].email, 'a@example.com');
+    assert.equal(day.users[0].bytes, 100);
+    assert.equal(day.users[0].online, true);
+
+    const month = await tracker.getTrafficRanking(entries, 'month');
+    assert.equal(month.users[0].bytes, 3000);
+    assert.equal(month.users[1].bytes, 1000);
+
+    const total = await tracker.getTrafficRanking(entries, 'total');
+    assert.equal(total.users[0].bytes, 9000);
+    assert.equal(total.users[1].bytes, 5000);
+    assert.equal(total.users[0].rank, 1);
+    assert.equal(total.users[1].rank, 2);
   });
 });

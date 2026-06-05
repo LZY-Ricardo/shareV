@@ -416,6 +416,22 @@ app.get('/api/admin/stats', rateLimiter, requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/api/admin/traffic-ranking', rateLimiter, requireAdmin, async (req, res) => {
+  const period = String(req.query.period || 'day').trim().toLowerCase();
+  if (!['day', 'month', 'total'].includes(period)) {
+    return res.status(400).json({ error: 'period 须为 day、month 或 total' });
+  }
+
+  try {
+    const entries = userDirectory.listUsers(getBaseUrl(req));
+    const ranking = await tracker.getTrafficRanking(entries, period);
+    res.json(ranking);
+  } catch (err) {
+    console.error('[shareV] Admin traffic ranking error:', err.message);
+    res.status(500).json({ error: '服务暂时不可用' });
+  }
+});
+
 // ── Admin-only: manual snapshot trigger ──
 app.post('/api/admin/snapshot', rateLimiter, requireAdmin, async (req, res) => {
   try {

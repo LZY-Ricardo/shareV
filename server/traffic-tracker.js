@@ -329,11 +329,113 @@ async function getLiveCounters(email) {
   return null;
 }
 
+const RANKING_PERIODS = new Set(['day', 'month', 'total']);
+
+function trafficForRankingPeriod(email, period, liveClient) {
+  switch (period) {
+    case 'day': {
+      const t = db.getPeriodTraffic(email, db.getTodayStart());
+      return { up: t.up, down: t.down, bytes: t.up + t.down };
+    }
+    case 'month': {
+      if (liveClient) {
+        const up = liveClient.up || 0;
+        const down = liveClient.down || 0;
+        return { up, down, bytes: up + down };
+      }
+      const t = db.getPeriodTraffic(email, db.getMonthStart());
+      return { up: t.up, down: t.down, bytes: t.up + t.down };
+    }
+    case 'total':
+    default: {
+      if (liveClient) {
+        const allTime = liveClient.allTime || 0;
+        if (allTime > 0) {
+          const split = splitAllTimeByCurrentTraffic(
+            liveClient.up || 0,
+            liveClient.down || 0,
+            allTime
+          );
+          return { up: split.up, down: split.down, bytes: allTime };
+        }
+        const up = liveClient.up || 0;
+        const down = liveClient.down || 0;
+        return { up, down, bytes: up + down };
+      }
+      const latest = db.getLatestSnapshot(email);
+      const { up, down } = snapshotTrafficTotal(latest);
+      return { up, down, bytes: up + down };
+    }
+  }
+}
+
+async function getTrafficRanking(entries, period = 'day') {
+  const rankingPeriod = RANKING_PERIODS.has(period) ? period : 'day';
+  const liveByEmail = new Map();
+
+  try {
+    const inbounds = await xui.getInbounds();
+    for (const inbound of inbounds) {
+      for (const client of inbound.clientStats || []) {
+        if (client.email) liveByEmail.set(client.email, client);
+      }
+    }
+  } catch (err) {
+    console.warn('[tracker] Ranking: failed to fetch live data:', err.message);
+  }
+
+  let onlineClients = [];
+  try {
+    onlineClients = await xui.getOnlineClients();
+  } catch {
+    // ignore
+  }
+  const onlineSet = new Set(onlineClients);
+
+  const rows = entries.map((user) => {
+    const email = String(user.email || '').trim();
+    const liveClient = liveByEmail.get(email) || null;
+    const { up, down, bytes } = trafficForRankingPeriod(email, rankingPeriod, liveClient);
+    return {
+      name: user.name,
+      email,
+      token: user.token,
+      online: onlineSet.has(email),
+      up,
+      down,
+      bytes,
+    };
+  });
+
+  rows.sort((a, b) => b.bytes - a.bytes || a.name.localeCompare(b.name, 'zh-CN'));
+  const totalBytes = rows.reduce((sum, row) => sum + row.bytes, 0);
+  const maxBytes = rows[0]?.bytes || 0;
+
+  return {
+    period: rankingPeriod,
+    updatedAt: new Date().toISOString(),
+    totalBytes,
+    users: rows.map((row, index) => ({
+      rank: index + 1,
+      name: row.name,
+      email: row.email,
+      token: row.token,
+      online: row.online,
+      up: row.up,
+      down: row.down,
+      bytes: row.bytes,
+      share: totalBytes > 0 ? row.bytes / totalBytes : 0,
+      barPct: maxBytes > 0 ? row.bytes / maxBytes : 0,
+    })),
+  };
+}
+
 module.exports = {
   init,
   snapshot,
   ensureTodayBaselineSnapshot,
   getUserStats,
+  getTrafficRanking,
   getLiveCounters,
   buildClashConfig,
 };
