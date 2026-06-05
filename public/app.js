@@ -324,10 +324,13 @@
     html += '</div>';
     html += '</div>';
 
-    // Quota progress bar
+    // Quota progress bar — monthly usage (3X-UI billing period), not all-time total
     if (node.totalGB && node.totalGB > 0) {
       const totalBytes = node.totalGB * (1024 ** 3);
-      const usedBytes = data.total.up + data.total.down;
+      const monthUsage = data.month && (data.month.up + data.month.down > 0)
+        ? data.month
+        : (data.thisMonth || { up: 0, down: 0 });
+      const usedBytes = monthUsage.up + monthUsage.down;
       const pct = Math.min(100, (usedBytes / totalBytes) * 100);
       const usedF = formatBytes(usedBytes);
       const cls = pct > 90 ? 'danger' : pct > 70 ? 'warn' : '';
@@ -337,7 +340,7 @@
       html += `<div class="quota-fill ${cls}" style="width:${pct.toFixed(1)}%"></div>`;
       html += '</div>';
       html += '<div class="quota-info">';
-      html += `<span>${usedF.value}${usedF.unit} / ${node.totalGB} GB</span>`;
+      html += `<span>本月 ${usedF.value}${usedF.unit} / ${node.totalGB} GB</span>`;
       html += `<span class="quota-pct ${cls}">${pct.toFixed(1)}%</span>`;
       html += '</div>';
 
@@ -608,7 +611,8 @@
     const chartH = H - padTop - padBottom;
 
     const values = daily.map(d => d.up + d.down);
-    const maxVal = Math.max(...values, 1024 * 1024 * 100);
+    const peak = Math.max(...values, 0);
+    const maxVal = Math.max(peak, 1024 * 1024); // at least 1MB scale so small daily usage stays visible
 
     // Grid lines
     ctx.strokeStyle = 'rgba(0, 240, 255, 0.06)';

@@ -192,6 +192,17 @@ describe('db', () => {
     });
   });
 
+  describe('migrateSnapshotEmail', () => {
+    it('renames snapshot rows when users switch from short ids to qq emails', () => {
+      db.insertSnapshot('iyu', 1, 2, 10, 20, 1000);
+      db.insertSnapshot('iyu', 3, 4, 30, 40, 2000);
+      const moved = db.migrateSnapshotEmail('iyu', '3239468786@qq.com');
+      assert.equal(moved, 2);
+      assert.equal(db.getLatestSnapshot('iyu'), undefined);
+      assert.equal(db.getLatestSnapshot('3239468786@qq.com').up, 3);
+    });
+  });
+
   describe('backup', () => {
     it('returns a promise that resolves after the backup is written', async () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sharev-backup-'));

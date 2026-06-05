@@ -262,6 +262,19 @@ function createDB(dbPath) {
     db.prepare('DELETE FROM auth_sessions WHERE expires_at <= ?').run(now);
   }
 
+  function hasSnapshots(email) {
+    const row = db.prepare('SELECT 1 FROM traffic_snapshots WHERE email = ? LIMIT 1').get(email);
+    return Boolean(row);
+  }
+
+  function migrateSnapshotEmail(fromEmail, toEmail) {
+    const from = String(fromEmail || '').trim();
+    const to = String(toEmail || '').trim();
+    if (!from || !to || from === to) return 0;
+    const result = db.prepare('UPDATE traffic_snapshots SET email = ? WHERE email = ?').run(to, from);
+    return result.changes;
+  }
+
   return {
     insertSnapshot,
     insertSnapshots,
@@ -280,6 +293,8 @@ function createDB(dbPath) {
     getSession,
     deleteSession,
     deleteExpiredSessions,
+    hasSnapshots,
+    migrateSnapshotEmail,
     backup(destPath) {
       return db.backup(destPath);
     },

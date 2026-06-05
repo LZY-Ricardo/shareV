@@ -142,6 +142,26 @@ if (passwordAudit.defaultPasswordUsers.length > 0) {
   );
 }
 
+// One-time style migration: snapshots keyed by old 3X-UI short ids → unified QQ emails
+function migrateLegacySnapshotEmails() {
+  let total = 0;
+  for (const user of Object.values(config.users)) {
+    const legacy = String(user.name || '').trim();
+    const email = String(user.email || '').trim();
+    if (!legacy || !email || legacy === email) continue;
+    if (!db.hasSnapshots(legacy) || db.hasSnapshots(email)) continue;
+    const moved = db.migrateSnapshotEmail(legacy, email);
+    if (moved > 0) {
+      console.log(`[shareV] Migrated ${moved} snapshot rows: ${legacy} → ${email}`);
+      total += moved;
+    }
+  }
+  if (total > 0) {
+    console.log(`[shareV] Snapshot email migration complete (${total} rows)`);
+  }
+}
+migrateLegacySnapshotEmails();
+
 function requireAdmin(req, res, next) {
   const bearer = req.headers['authorization'];
   if (!ADMIN_TOKEN || bearer !== `Bearer ${ADMIN_TOKEN}`) {
