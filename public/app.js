@@ -2,13 +2,70 @@
   let refreshTimer = null;
   let currentToken = '';
 
-  const savedToken = localStorage.getItem('sharev_token');
-  currentToken = readTokenFromHash() || savedToken || '';
+  const fetchOpts = { credentials: 'same-origin' };
 
-  if (currentToken) {
-    showDashboard();
-  } else {
+  init();
+
+  async function init() {
+    const hashToken = readTokenFromHash();
+    if (hashToken) {
+      const ok = await exchangeToken(hashToken);
+      if (ok) {
+        history.replaceState(null, '', location.pathname + location.search);
+        showDashboard();
+        return;
+      }
+    }
+
+    const sessionOk = await checkSession();
+    if (sessionOk) {
+      showDashboard();
+      return;
+    }
+
+    const savedToken = localStorage.getItem('sharev_token');
+    if (savedToken) {
+      const ok = await exchangeToken(savedToken);
+      if (ok) {
+        showDashboard();
+        return;
+      }
+      localStorage.removeItem('sharev_token');
+    }
+
     showLogin();
+  }
+
+  async function checkSession() {
+    try {
+      const res = await fetch('/api/auth/me', fetchOpts);
+      if (!res.ok) return false;
+      const data = await res.json();
+      currentToken = '';
+      if (data.user?.name) {
+        document.getElementById('userName').textContent = data.user.name;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function exchangeToken(token) {
+    try {
+      const res = await fetch('/api/auth/token', {
+        ...fetchOpts,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      if (!res.ok) return false;
+      currentToken = token;
+      localStorage.setItem('sharev_token', token);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function readTokenFromHash() {
@@ -20,7 +77,7 @@
     return raw;
   }
 
-  function showLogin() {
+  function showLogin(mode = 'password') {
     document.getElementById('userName').textContent = 'shareV';
     document.getElementById('updateTime').textContent = 'TRAFFIC MONITORING SYSTEM';
     document.getElementById('content').innerHTML = `
@@ -33,27 +90,87 @@
             <circle cx="12" cy="10" r="2"/>
           </svg>
         </div>
-        <div class="login-title">输入访问码以查看流量数据</div>
-        <div class="login-form">
-          <input type="text" id="tokenInput" placeholder="访问码" autocomplete="off" spellcheck="false" />
-          <button id="loginBtn" onclick="handleLogin()">GO</button>
+        <div class="login-title">${mode === 'password' ? '登录查看流量数据' : '输入访问码查看流量'}</div>
+        <div class="login-tabs">
+          <button type="button" class="login-tab ${mode === 'password' ? 'active' : ''}" onclick="switchLoginMode('password')">账号登录</button>
+          <button type="button" class="login-tab ${mode === 'token' ? 'active' : ''}" onclick="switchLoginMode('token')">访问码</button>
         </div>
+        ${mode === 'password' ? `
+        <form class="login-form login-form-stacked" id="passwordLoginForm">
+          <input type="text" id="emailInput" placeholder="QQ 邮箱（与 3X-UI 一致）" autocomplete="username" spellcheck="false" />
+          <input type="password" id="passwordInput" placeholder="密码" autocomplete="current-password" />
+          <button id="loginBtn" type="submit">登录</button>
+        </form>` : `
+        <form class="login-form" id="tokenLoginForm">
+          <input type="text" id="tokenInput" placeholder="访问码" autocomplete="off" spellcheck="false" />
+          <button id="tokenLoginBtn" type="submit">GO</button>
+        </form>`}
+        <div class="login-hint">${mode === 'password' ? '使用 3X-UI 客户端邮箱登录，初始密码 123456' : '仍可使用管理员分享的访问链接或访问码'}</div>
       </div>`;
-    const input = document.getElementById('tokenInput');
-    input.focus();
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleLogin();
-    });
+
+    if (mode === 'password') {
+      const form = document.getElementById('passwordLoginForm');
+      const emailInput = document.getElementById('emailInput');
+      emailInput.focus();
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handlePasswordLogin();
+      });
+    } else {
+      const form = document.getElementById('tokenLoginForm');
+      document.getElementById('tokenInput').focus();
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleTokenLogin();
+      });
+    }
   }
 
-  window.handleLogin = function () {
+  window.switchLoginMode = function (mode) {
+    showLogin(mode);
+  };
+
+  async function handlePasswordLogin() {
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    if (!email || !password) return;
+
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        ...fetchOpts,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account: email, email, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '登录失败');
+
+      currentToken = '';
+      localStorage.removeItem('sharev_token');
+      showDashboard();
+    } catch (err) {
+      toast(err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '登录';
+    }
+  }
+
+  async function handleTokenLogin() {
     const token = document.getElementById('tokenInput').value.trim();
     if (!token) return;
-    currentToken = token;
-    localStorage.setItem('sharev_token', token);
-    location.hash = `t=${encodeURIComponent(token)}`;
-    showDashboard();
-  };
+    const ok = await exchangeToken(token);
+    if (ok) {
+      showDashboard();
+    } else {
+      toast('访问码无效', 'error');
+    }
+  }
+
+  window.handleLogin = handleTokenLogin;
 
   function showDashboard() {
     loadStats();
@@ -64,7 +181,16 @@
   async function loadStats() {
     showLoadingBar(true);
     try {
-      const res = await fetch(`/api/stats?token=${encodeURIComponent(currentToken)}`);
+      const url = currentToken
+        ? `/api/stats?token=${encodeURIComponent(currentToken)}`
+        : '/api/stats';
+      const res = await fetch(url, fetchOpts);
+      if (res.status === 401) {
+        currentToken = '';
+        localStorage.removeItem('sharev_token');
+        showLogin();
+        return;
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || '请求失败');
@@ -391,7 +517,10 @@
 
   async function pollSpeed() {
     try {
-      const res = await fetch(`/api/speed?token=${encodeURIComponent(currentToken)}`);
+      const url = currentToken
+        ? `/api/speed?token=${encodeURIComponent(currentToken)}`
+        : '/api/speed';
+      const res = await fetch(url, fetchOpts);
       if (!res.ok) return;
       const data = await res.json();
       const now = Date.now();
@@ -709,6 +838,7 @@
     if (link) localStorage.setItem('sharev_guide_link', link);
     if (lastData?.name) localStorage.setItem('sharev_guide_user', lastData.name);
     if (currentToken) localStorage.setItem('sharev_guide_token', currentToken);
+    else localStorage.removeItem('sharev_guide_token');
     window.open('/guide.html', '_blank', 'noopener');
   };
 
@@ -718,6 +848,7 @@
     if (link) localStorage.setItem('sharev_clash_link', link);
     if (lastData?.name) localStorage.setItem('sharev_guide_user', lastData.name);
     if (currentToken) localStorage.setItem('sharev_guide_token', currentToken);
+    else localStorage.removeItem('sharev_guide_token');
     window.open('/guide-clash.html', '_blank', 'noopener');
   };
 
@@ -734,7 +865,10 @@
     }
   };
 
-  window.handleLogout = function () {
+  window.handleLogout = async function () {
+    try {
+      await fetch('/api/auth/logout', { ...fetchOpts, method: 'POST' });
+    } catch { /* ignore */ }
     currentToken = '';
     localStorage.removeItem('sharev_token');
     location.hash = '';

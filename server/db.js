@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 
 function createDB(dbPath) {
   const db = typeof dbPath === 'string' ? new Database(dbPath) : dbPath;
@@ -19,6 +20,15 @@ function createDB(dbPath) {
       timestamp INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_ts_email ON traffic_snapshots(email, timestamp);
+
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+      id TEXT PRIMARY KEY,
+      role TEXT NOT NULL,
+      user_uuid TEXT,
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires ON auth_sessions(expires_at);
   `);
 
   // Insert a traffic snapshot
@@ -232,6 +242,26 @@ function createDB(dbPath) {
     return { up: delta.up / dt, down: delta.down / dt, intervalSec: dt };
   }
 
+  function createSession({ id, role, userUuid, expiresAt, createdAt }) {
+    db.prepare(
+      'INSERT INTO auth_sessions (id, role, user_uuid, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
+    ).run(id, role, userUuid || null, expiresAt, createdAt);
+  }
+
+  function getSession(id) {
+    return db.prepare(
+      'SELECT id, role, user_uuid, expires_at, created_at FROM auth_sessions WHERE id = ?'
+    ).get(id);
+  }
+
+  function deleteSession(id) {
+    db.prepare('DELETE FROM auth_sessions WHERE id = ?').run(id);
+  }
+
+  function deleteExpiredSessions(now) {
+    db.prepare('DELETE FROM auth_sessions WHERE expires_at <= ?').run(now);
+  }
+
   return {
     insertSnapshot,
     insertSnapshots,
@@ -246,6 +276,10 @@ function createDB(dbPath) {
     getLastMonthStart,
     getRecentSpeed,
     cleanup,
+    createSession,
+    getSession,
+    deleteSession,
+    deleteExpiredSessions,
     backup(destPath) {
       return db.backup(destPath);
     },
@@ -256,6 +290,8 @@ function createDB(dbPath) {
 }
 
 // Default instance for production
-const defaultDB = createDB(path.join(__dirname, '..', 'data', 'traffic.db'));
+const dataDir = path.join(__dirname, '..', 'data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+const defaultDB = createDB(path.join(dataDir, 'traffic.db'));
 
 module.exports = { createDB, ...defaultDB };

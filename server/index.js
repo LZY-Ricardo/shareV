@@ -10,6 +10,7 @@ const { createUserDirectory } = require('./user-directory');
 const { resolvePublicUrl } = require('./public-url');
 const { getClashProfileFilename } = require('./clash-profile-name');
 const emailService = require('./email');
+const { createAuth, auditUserPasswords } = require('./auth');
 
 // Load config
 const configPath = path.join(__dirname, '..', 'config.json');
@@ -65,13 +66,15 @@ app.use((_, res, next) => {
 // Static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Parse JSON body for admin endpoints
+// Parse JSON body for API endpoints
+app.use('/api/auth', express.json({ limit: '16kb' }));
 app.use('/api/admin/email', express.json());
 
 // ── Simple rate limiter (in-memory, per-IP) ──
 const rateLimits = new Map();
 const RATE_WINDOW = 60_000; // 1 minute
 const RATE_MAX = 30;        // max requests per window
+const AUTH_RATE_MAX = 10;   // max auth attempts per window
 
 function rateLimiter(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress;
@@ -88,6 +91,22 @@ function rateLimiter(req, res, next) {
   next();
 }
 
+function authRateLimiter(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress;
+  const key = `auth:${ip}`;
+  const now = Date.now();
+  let entry = rateLimits.get(key);
+  if (!entry || now - entry.start > RATE_WINDOW) {
+    entry = { start: now, count: 0 };
+    rateLimits.set(key, entry);
+  }
+  entry.count++;
+  if (entry.count > AUTH_RATE_MAX) {
+    return res.status(429).json({ error: '登录尝试过于频繁，请稍后再试' });
+  }
+  next();
+}
+
 // Clean up rate limit entries every 5 minutes
 setInterval(() => {
   const cutoff = Date.now() - RATE_WINDOW * 2;
@@ -96,28 +115,54 @@ setInterval(() => {
   }
 }, 300_000);
 
-// ── Admin auth middleware (for protected endpoints) ──
+// ── Auth ──
 const ADMIN_TOKEN = (process.env.ADMIN_TOKEN || '').trim() || null;
+const userDirectory = createUserDirectory(config.users);
+const authConfig = config.auth || {};
+const auth = createAuth({
+  db,
+  userDirectory,
+  defaultPassword: authConfig.defaultPassword || '123456',
+  sessionMaxAgeSec: (authConfig.sessionMaxAgeDays || 7) * 24 * 3600,
+});
+
 if (!ADMIN_TOKEN) {
-  console.warn('[shareV] WARNING: ADMIN_TOKEN not set. /api/snapshot endpoint is disabled.');
+  console.warn('[shareV] WARNING: ADMIN_TOKEN not set. Admin endpoints are disabled.');
+}
+
+const passwordAudit = auditUserPasswords(config.users);
+if (passwordAudit.plainTextUsers.length > 0) {
+  console.warn(
+    `[shareV] WARNING: ${passwordAudit.plainTextUsers.length} user(s) use plaintext password in config.json — run "node server/hash-password.js <password>" and set passwordHash instead.`
+  );
+}
+if (passwordAudit.defaultPasswordUsers.length > 0) {
+  console.warn(
+    `[shareV] WARNING: ${passwordAudit.defaultPasswordUsers.length} user(s) still use the default password "${auth.defaultPassword}" — change auth.defaultPassword or set passwordHash before public exposure.`
+  );
 }
 
 function requireAdmin(req, res, next) {
-  const auth = req.headers['authorization'];
-  if (!ADMIN_TOKEN || auth !== `Bearer ${ADMIN_TOKEN}`) {
+  const bearer = req.headers['authorization'];
+  if (!ADMIN_TOKEN || bearer !== `Bearer ${ADMIN_TOKEN}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
 }
 
-const userDirectory = createUserDirectory(config.users);
+function publicUserPayload(user) {
+  return {
+    name: user.name,
+    email: user.email,
+  };
+}
 
 function getBaseUrl(req) {
   return resolvePublicUrl(config, req);
 }
 
 function getUserByToken(req, res) {
-  const token = (req.query.token || '').trim();
+  const token = (req.query.token || req.body?.token || '').trim();
   const user = userDirectory.findByToken(token);
   if (!user) {
     res.status(404).json({ error: '未找到数据' });
@@ -126,13 +171,70 @@ function getUserByToken(req, res) {
   return user;
 }
 
+function resolveUser(req, res, { allowSession = true } = {}) {
+  if (allowSession) {
+    const sessionUser = auth.getUserFromSession(req);
+    if (sessionUser) return sessionUser;
+  }
+  const token = (req.query.token || req.body?.token || '').trim();
+  if (token) {
+    const user = userDirectory.findByToken(token);
+    if (user) return user;
+  }
+  if (res) res.status(401).json({ error: '未登录或访问码无效' });
+  return null;
+}
+
 function getClashConfigUrl(req, token) {
   return `${getBaseUrl(req)}/sub/clash?token=${encodeURIComponent(token)}`;
 }
 
-// ── API: Get stats by user access token ──
+// ── Auth routes ──
+app.post('/api/auth/login', authRateLimiter, async (req, res) => {
+  const account = (req.body?.email || req.body?.username || req.body?.account || '').trim();
+  const password = req.body?.password || '';
+  if (!account || !password) {
+    return res.status(400).json({ error: '请输入账号和密码' });
+  }
+
+  const result = auth.loginUser(account, password);
+  if (!result.ok) {
+    return res.status(401).json({ error: result.error });
+  }
+
+  auth.createUserSession(result.user.uuid, req, res);
+  res.json({ user: publicUserPayload(result.user) });
+});
+
+app.post('/api/auth/token', authRateLimiter, async (req, res) => {
+  const token = (req.body?.token || req.query.token || '').trim();
+  if (!token) {
+    return res.status(400).json({ error: '缺少访问码' });
+  }
+  const user = userDirectory.findByToken(token);
+  if (!user) {
+    return res.status(401).json({ error: '访问码无效' });
+  }
+  auth.createUserSession(user.uuid, req, res);
+  res.json({ user: publicUserPayload(user) });
+});
+
+app.post('/api/auth/logout', rateLimiter, (req, res) => {
+  auth.destroyUserSession(req, res);
+  res.json({ success: true });
+});
+
+app.get('/api/auth/me', rateLimiter, (req, res) => {
+  const user = auth.getUserFromSession(req);
+  if (!user) {
+    return res.status(401).json({ error: '未登录' });
+  }
+  res.json({ user: publicUserPayload(user) });
+});
+
+// ── API: Get stats by user session or access token ──
 app.get('/api/stats', rateLimiter, async (req, res) => {
-  const user = getUserByToken(req, res);
+  const user = resolveUser(req, res);
   if (!user) return;
 
   try {
@@ -185,7 +287,7 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
 
 // Real-time speed: returns raw counters for frontend to compute speed
 app.get('/api/speed', rateLimiter, async (req, res) => {
-  const user = getUserByToken(req, res);
+  const user = resolveUser(req, res);
   if (!user) return;
 
   try {
@@ -242,38 +344,73 @@ app.post('/api/admin/snapshot', rateLimiter, requireAdmin, async (req, res) => {
   }
 });
 
-// ── Sync new 3X-UI clients into config ──
+function displayNameFromXuiClient(cl) {
+  const comment = String(cl.comment || '').trim();
+  return comment || String(cl.email || '').trim();
+}
+
+// ── Sync 3X-UI clients into config (email + comment → name) ──
 async function syncClientsFromXui() {
   try {
     const inbounds = await xui.getInbounds();
     const synced = [];
+    const updated = [];
+    let changed = false;
+
     for (const inbound of inbounds) {
       const settings = JSON.parse(inbound.settings || '{}');
-      const clients = settings.clients || [];
-      for (const cl of clients) {
+      for (const cl of settings.clients || []) {
         if (!cl.id || !cl.email) continue;
-        if (config.users[cl.id]) continue;
-        const token = crypto.randomBytes(24).toString('base64url');
-        const user = { name: cl.email, email: cl.email, token };
-        config.users[cl.id] = user;
-        userDirectory.addUser(cl.id, user);
-        synced.push(cl.email);
+
+        const email = String(cl.email).trim();
+        const name = displayNameFromXuiClient(cl);
+
+        if (!config.users[cl.id]) {
+          const token = crypto.randomBytes(24).toString('base64url');
+          config.users[cl.id] = { name, email, token };
+          synced.push(email);
+          changed = true;
+          continue;
+        }
+
+        const user = config.users[cl.id];
+        let userChanged = false;
+        if (user.email !== email) {
+          user.email = email;
+          userChanged = true;
+        }
+        if (name && user.name !== name) {
+          user.name = name;
+          userChanged = true;
+        }
+        if (user.notifyEmail) {
+          delete user.notifyEmail;
+          userChanged = true;
+        }
+        if (userChanged) updated.push(email);
+        changed = changed || userChanged;
       }
     }
-    if (synced.length > 0) {
+
+    if (changed) {
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
-      console.log(`[shareV] Synced ${synced.length} new client(s): ${synced.join(', ')}`);
+      userDirectory.replaceAllUsers(config.users);
+      console.log(`[shareV] Synced ${synced.length} new, updated ${updated.length} from 3X-UI`);
     }
-    return synced;
+    return { synced, updated };
   } catch (err) {
     console.error('[shareV] Client sync error:', err.message);
-    return [];
+    return { synced: [], updated: [] };
   }
 }
 
 app.post('/api/admin/sync', rateLimiter, requireAdmin, async (req, res) => {
-  const synced = await syncClientsFromXui();
-  res.json({ synced, count: synced.length });
+  const result = await syncClientsFromXui();
+  res.json({
+    synced: result.synced,
+    updated: result.updated,
+    count: result.synced.length + result.updated.length,
+  });
 });
 
 // ── Admin: send test email ──
@@ -281,12 +418,12 @@ app.post('/api/admin/email/test', rateLimiter, requireAdmin, async (req, res) =>
   try {
     const token = (req.query.token || req.body?.token || '').trim();
     const user = token ? userDirectory.findByToken(token) : null;
-    if (!user || !user.notifyEmail) {
+    if (!user || !user.email) {
       return res.status(400).json({ error: '用户未找到或未配置邮箱地址' });
     }
     await emailService.sendTestEmail(user);
-    console.log(`[shareV] Test email sent to ${user.notifyEmail}`);
-    res.json({ success: true, email: user.notifyEmail });
+    console.log(`[shareV] Test email sent to ${user.email}`);
+    res.json({ success: true, email: user.email });
   } catch (err) {
     console.error('[shareV] Test email error:', err.message);
     res.status(500).json({ error: '发送失败: ' + err.message });
@@ -300,16 +437,16 @@ app.post('/api/admin/email/monthly', rateLimiter, requireAdmin, async (req, res)
 
     const users = token
       ? [userDirectory.findByToken(token)].filter(Boolean)
-      : userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.notifyEmail);
+      : userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.email);
 
     const sent = [];
     const failed = [];
     for (const user of users) {
-      if (!user.notifyEmail) continue;
+      if (!user.email) continue;
       try {
         const stats = await tracker.getUserStats(user.email);
         await emailService.sendMonthlyReport(user, stats, config.publicUrl);
-        sent.push({ name: user.name, email: user.notifyEmail });
+        sent.push({ name: user.name, email: user.email });
       } catch (err) {
         failed.push({ name: user.name, error: err.message });
       }
@@ -329,12 +466,12 @@ app.post('/api/admin/email/monthly', rateLimiter, requireAdmin, async (req, res)
 if (emailService.isEnabled()) {
   cron.schedule('0 9 1 * *', async () => {
     console.log('[shareV] Sending monthly reports...');
-    const allUsers = userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.notifyEmail);
+    const allUsers = userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.email);
     for (const user of allUsers) {
       try {
         const stats = await tracker.getUserStats(user.email);
         await emailService.sendMonthlyReport(user, stats, config.publicUrl);
-        console.log(`[shareV] Monthly report sent to ${user.name} <${user.notifyEmail}>`);
+        console.log(`[shareV] Monthly report sent to ${user.name} <${user.email}>`);
       } catch (err) {
         console.error(`[shareV] Monthly report failed for ${user.name}: ${err.message}`);
       }
@@ -352,7 +489,7 @@ if (emailService.isEnabled()) {
     const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
 
     for (const user of allUsers) {
-      if (!user.notifyEmail) continue;
+      if (!user.email) continue;
       try {
         const stats = await tracker.getUserStats(user.email);
         const node = stats.node || {};
@@ -401,6 +538,11 @@ cron.schedule('0 4 * * *', async () => {
   } catch (err) {
     console.error('[shareV] DB backup failed:', err.message);
   }
+});
+
+// Clean expired auth sessions hourly
+cron.schedule('15 * * * *', () => {
+  auth.cleanupExpiredSessions();
 });
 
 const server = app.listen(PORT, () => {

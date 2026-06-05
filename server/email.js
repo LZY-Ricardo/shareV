@@ -351,26 +351,26 @@ async function sendEmail(to, subject, html) {
 }
 
 async function sendMonthlyReport(user, stats, publicUrl) {
-  if (!user.notifyEmail) return null;
+  if (!user.email) return null;
   const now = new Date();
   const subject = `shareV · ${now.getFullYear()} 年 ${now.getMonth() + 1} 月流量报告`;
   const html = buildMonthlyHtml(user, stats, publicUrl);
-  return sendEmail(user.notifyEmail, subject, html);
+  return sendEmail(user.email, subject, html);
 }
 
 async function sendQuotaWarning(user, stats, type) {
-  if (!user.notifyEmail) return null;
+  if (!user.email) return null;
   const subject = type === 'quota'
     ? 'shareV · 流量预警：配额即将用尽'
     : 'shareV · 到期预警：账号即将到期';
   const html = buildWarningHtml(user, stats, type);
-  return sendEmail(user.notifyEmail, subject, html);
+  return sendEmail(user.email, subject, html);
 }
 
 async function sendTestEmail(user) {
-  if (!user.notifyEmail) throw new Error('用户未配置邮箱地址');
+  if (!user.email) throw new Error('用户未配置邮箱地址');
   const html = buildTestHtml(user);
-  return sendEmail(user.notifyEmail, 'shareV · 测试邮件', html);
+  return sendEmail(user.email, 'shareV · 测试邮件', html);
 }
 
 module.exports = {

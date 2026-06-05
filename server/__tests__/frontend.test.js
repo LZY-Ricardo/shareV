@@ -27,11 +27,16 @@ describe('frontend assets', () => {
 });
 
 describe('access model', () => {
-  it('loads stats by access token instead of display name', () => {
+  it('supports session login and token fallback for stats', () => {
     const app = readPublic('app.js');
 
-    assert.match(app, /\/api\/stats\?token=/);
-    assert.doesNotMatch(app, /\/api\/stats\?name=/);
+    assert.match(app, /\/api\/auth\/login/);
+    assert.match(app, /\/api\/auth\/token/);
+    assert.match(app, /\/api\/stats/);
+    assert.match(app, /credentials:\s*'same-origin'/);
+    assert.match(app, /type="text" id="emailInput"/);
+    assert.match(app, /QQ 邮箱（与 3X-UI 一致）/);
+    assert.doesNotMatch(app, /type="email" id="emailInput"/);
   });
 
   it('copies the Clash subscription URL for Clash Verge import', () => {

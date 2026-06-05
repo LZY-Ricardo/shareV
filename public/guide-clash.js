@@ -9,8 +9,8 @@
   }
 
   const back = document.getElementById('backToDashboard');
-  if (back && token) {
-    back.href = `/#t=${encodeURIComponent(token)}`;
+  if (back) {
+    back.href = token ? `/#t=${encodeURIComponent(token)}` : '/';
   }
 
   const linkText = link || '没有读取到当前订阅链接。请先从 shareV 用户页的 Clash 标签页点"查看导入教程"进入本页。';

@@ -11,8 +11,21 @@
     "enabled": true,
     "from": "shareV <noreply@your-domain.com>"
   },
+  "auth": {
+    "defaultPassword": "123456",
+    "sessionMaxAgeDays": 7
+  },
   "users": {
-    "paste-uuid-here": { "name": "张三", "email": "vps3-张三", "token": "replace-with-random-token", "clashName": "shareV ultra", "notifyEmail": "zhangsan@example.com" },
-    "paste-uuid-here": { "name": "李四", "email": "vps3-李四", "token": "replace-with-random-token", "notifyEmail": "lisi@example.com" }
+    "paste-uuid-here": {
+      "name": "张三",
+      "email": "zhangsan@example.com",
+      "token": "replace-with-random-token",
+      "clashName": "shareV ultra"
+    },
+    "paste-uuid-here-2": {
+      "name": "李四",
+      "email": "lisi@example.com",
+      "token": "replace-with-random-token"
+    }
   }
 }

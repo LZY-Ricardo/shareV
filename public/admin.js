@@ -227,7 +227,10 @@
     try {
       const data = await adminFetch('/api/admin/sync', { method: 'POST' });
       if (data.count > 0) {
-        toast(`已同步 ${data.count} 个新客户端: ${data.synced.join(', ')}`);
+        const parts = [];
+        if (data.synced?.length) parts.push(`新增 ${data.synced.join(', ')}`);
+        if (data.updated?.length) parts.push(`更新 ${data.updated.join(', ')}`);
+        toast(parts.join('；') || `已同步 ${data.count} 项`);
       } else {
         toast('已是最新，无需同步');
       }
