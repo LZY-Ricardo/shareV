@@ -161,11 +161,8 @@ function alertBanner(text, type) {
 
 function buildMonthlyHtml(user, stats, publicUrl) {
   const now = new Date();
-  // Billing period: 8th of each month
-  // Current period: if today >= 8, it's [8th this month, now]; if today < 8, it's [8th last month, now]
-  const periodEnd = now.getDate() >= 8 ? new Date(now.getFullYear(), now.getMonth() + 1, 8) : new Date(now.getFullYear(), now.getMonth(), 8);
-  const periodStart = now.getDate() >= 8 ? new Date(now.getFullYear(), now.getMonth(), 8) : new Date(now.getFullYear(), now.getMonth() - 1, 8);
-  const periodLabel = `${periodStart.getMonth() + 1}/${periodStart.getFullYear()} - ${periodEnd.getMonth() + 1}/${periodEnd.getFullYear()}`;
+  // Calendar month billing cycle (1st of each month)
+  const periodLabel = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月`;
 
   const node = stats.node || {};
   const hasQuota = node.totalGB && node.totalGB > 0;
@@ -192,7 +189,7 @@ function buildMonthlyHtml(user, stats, publicUrl) {
 
   let p = [];
   p.push(wrapperStart('月度报告'));
-  p.push(greeting(`Hi <strong style="color:${TEXT_DARK};">${escHtml(user.name)}</strong>，这是你的 <strong style="color:${TEXT_DARK};">本期（${periodLabel}）</strong> 流量报告`));
+  p.push(greeting(`Hi <strong style="color:${TEXT_DARK};">${escHtml(user.name)}</strong>，这是你的 <strong style="color:${TEXT_DARK};">${periodLabel}</strong> 流量报告`));
 
   // Quota
   if (hasQuota) {
@@ -207,7 +204,7 @@ function buildMonthlyHtml(user, stats, publicUrl) {
   }
 
   // Monthly traffic
-  p.push(sectionStart('本期流量'));
+  p.push(sectionStart('本月流量'));
   p.push(statGrid([
     { value: formatBytes(monthUp), label: '↑ 上传' },
     { value: formatBytes(monthDown), label: '↓ 下载' },
@@ -239,7 +236,7 @@ function buildMonthlyHtml(user, stats, publicUrl) {
   p.push(sectionStart('账号信息'));
   const rows = [];
   if (node.remark) rows.push(detailRow('节点', escHtml(node.remark), false));
-  rows.push(detailRow('本期用量', formatBytes(monthTotal), false));
+  rows.push(detailRow('本月用量', formatBytes(monthTotal), false));
   rows.push(detailRow('累计总量', formatBytes(totalBytes), false));
   if (node.expiryTime && node.expiryTime > 0) {
     const daysLeft = Math.max(0, Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24)));
@@ -356,10 +353,7 @@ async function sendEmail(to, subject, html) {
 async function sendMonthlyReport(user, stats, publicUrl) {
   if (!user.notifyEmail) return null;
   const now = new Date();
-  const periodStart = now.getDate() >= 8 ? new Date(now.getFullYear(), now.getMonth(), 8) : new Date(now.getFullYear(), now.getMonth() - 1, 8);
-  const periodEnd = now.getDate() >= 8 ? new Date(now.getFullYear(), now.getMonth() + 1, 8) : new Date(now.getFullYear(), now.getMonth(), 8);
-  const periodLabel = `${periodStart.getMonth() + 1}/${periodStart.getFullYear()} - ${periodEnd.getMonth() + 1}/${periodEnd.getFullYear()}`;
-  const subject = `shareV · 本期流量报告（${periodLabel}）`;
+  const subject = `shareV · ${now.getFullYear()} 年 ${now.getMonth() + 1} 月流量报告`;
   const html = buildMonthlyHtml(user, stats, publicUrl);
   return sendEmail(user.notifyEmail, subject, html);
 }

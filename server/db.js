@@ -186,34 +186,21 @@ function createDB(dbPath) {
     return Boolean(row);
   }
 
-  // Get this billing period's start timestamp (8th of month, midnight)
-  // If today >= 8: period started on the 8th of this month
-  // If today < 8: period started on the 8th of last month
-  const BILLING_DAY = 8;
-
+  // Get this month's start timestamp (1st day of month, midnight)
   function getMonthStart() {
     const now = new Date();
-    if (now.getDate() >= BILLING_DAY) {
-      return billingTimestamp(now.getFullYear(), now.getMonth(), BILLING_DAY);
-    }
-    // Go back to previous month
-    const prev = new Date(now.getFullYear(), now.getMonth(), 0); // last day of prev month
-    return billingTimestamp(prev.getFullYear(), prev.getMonth(), BILLING_DAY);
+    now.setDate(1);
+    now.setHours(0, 0, 0, 0);
+    return Math.floor(now.getTime() / 1000);
   }
 
-  // Get last billing period's start timestamp
+  // Get last month's start timestamp (1st day of previous month, midnight)
   function getLastMonthStart() {
-    const thisStart = new Date(getMonthStart() * 1000);
-    // Go one month back from this period's start
-    const m = thisStart.getMonth() === 0 ? 11 : thisStart.getMonth() - 1;
-    const y = thisStart.getMonth() === 0 ? thisStart.getFullYear() - 1 : thisStart.getFullYear();
-    return billingTimestamp(y, m, BILLING_DAY);
-  }
-
-  function billingTimestamp(year, month, day) {
-    const d = new Date(year, month, day);
-    d.setHours(0, 0, 0, 0);
-    return Math.floor(d.getTime() / 1000);
+    const now = new Date();
+    now.setMonth(now.getMonth() - 1);
+    now.setDate(1);
+    now.setHours(0, 0, 0, 0);
+    return Math.floor(now.getTime() / 1000);
   }
 
   // Clean up old snapshots (keep last 90 days)

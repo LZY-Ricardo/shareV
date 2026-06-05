@@ -166,15 +166,13 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
     );
     // subscription-userinfo header for Clash traffic display
     if (stats.node) {
-      // Use billing period traffic (8th-based), not all-time total
+      // Use current calendar month traffic, not all-time total
       const upload = stats.thisMonth ? stats.thisMonth.up : 0;
       const download = stats.thisMonth ? stats.thisMonth.down : 0;
       const total = stats.node.totalGB ? Math.round(stats.node.totalGB * 1024 * 1024 * 1024) : 0;
-      // Show next billing reset date (8th of next month) instead of account expiry
+      // Show next reset date (1st of next month) instead of account expiry
       const now = new Date();
-      const nextReset = now.getDate() >= 8
-        ? new Date(now.getFullYear(), now.getMonth() + 1, 8)
-        : new Date(now.getFullYear(), now.getMonth(), 8);
+      const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
       const expire = Math.floor(nextReset.getTime() / 1000);
       res.setHeader("subscription-userinfo", `upload=${upload}; download=${download}; total=${total}; expire=${expire}`);
     }
@@ -327,9 +325,9 @@ app.post('/api/admin/email/monthly', rateLimiter, requireAdmin, async (req, res)
   }
 });
 
-// ── Email: monthly report on the 8th of each month at 9am ──
+// ── Email: monthly report on the 1st of each month at 9am ──
 if (emailService.isEnabled()) {
-  cron.schedule('0 9 8 * *', async () => {
+  cron.schedule('0 9 1 * *', async () => {
     console.log('[shareV] Sending monthly reports...');
     const allUsers = userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.notifyEmail);
     for (const user of allUsers) {
