@@ -145,17 +145,30 @@ if (passwordAudit.defaultPasswordUsers.length > 0) {
 // One-time style migration: snapshots keyed by old 3X-UI short ids → unified QQ emails
 function migrateLegacySnapshotEmails() {
   let total = 0;
+  const snapshotEmails = db.listDistinctSnapshotEmails();
+
   for (const user of Object.values(config.users)) {
-    const legacy = String(user.name || '').trim();
     const email = String(user.email || '').trim();
-    if (!legacy || !email || legacy === email) continue;
-    if (!db.hasSnapshots(legacy) || db.hasSnapshots(email)) continue;
-    const moved = db.migrateSnapshotEmail(legacy, email);
+    const name = String(user.name || '').trim();
+    if (!email) continue;
+
+    let legacyKey = null;
+    for (const snapEmail of snapshotEmails) {
+      if (snapEmail.toLowerCase() === email.toLowerCase()) continue;
+      if (name && snapEmail.toLowerCase() === name.toLowerCase()) {
+        legacyKey = snapEmail;
+        break;
+      }
+    }
+
+    if (!legacyKey) continue;
+    const moved = db.migrateSnapshotEmail(legacyKey, email);
     if (moved > 0) {
-      console.log(`[shareV] Migrated ${moved} snapshot rows: ${legacy} → ${email}`);
+      console.log(`[shareV] Migrated ${moved} snapshot rows: ${legacyKey} → ${email}`);
       total += moved;
     }
   }
+
   if (total > 0) {
     console.log(`[shareV] Snapshot email migration complete (${total} rows)`);
   }
@@ -400,8 +413,12 @@ async function syncClientsFromXui() {
           userChanged = true;
         }
         if (name && user.name !== name) {
-          user.name = name;
-          userChanged = true;
+          // Keep manual display casing (e.g. Hua) when 3X-UI comment only differs by case (hua)
+          const sameIgnoringCase = user.name.toLowerCase() === name.toLowerCase();
+          if (!sameIgnoringCase) {
+            user.name = name;
+            userChanged = true;
+          }
         }
         if (user.notifyEmail) {
           delete user.notifyEmail;

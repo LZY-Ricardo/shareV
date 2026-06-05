@@ -270,9 +270,14 @@ function createDB(dbPath) {
   function migrateSnapshotEmail(fromEmail, toEmail) {
     const from = String(fromEmail || '').trim();
     const to = String(toEmail || '').trim();
-    if (!from || !to || from === to) return 0;
+    if (!from || !to || from.toLowerCase() === to.toLowerCase()) return 0;
     const result = db.prepare('UPDATE traffic_snapshots SET email = ? WHERE email = ?').run(to, from);
     return result.changes;
+  }
+
+  function listDistinctSnapshotEmails() {
+    return db.prepare('SELECT DISTINCT email FROM traffic_snapshots ORDER BY email').all()
+      .map((row) => row.email);
   }
 
   return {
@@ -295,6 +300,7 @@ function createDB(dbPath) {
     deleteExpiredSessions,
     hasSnapshots,
     migrateSnapshotEmail,
+    listDistinctSnapshotEmails,
     backup(destPath) {
       return db.backup(destPath);
     },
