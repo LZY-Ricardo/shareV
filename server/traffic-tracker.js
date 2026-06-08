@@ -96,7 +96,13 @@ async function snapshot() {
   }
 }
 
-async function getUserStats(email) {
+function resolveNodeDisplayName(displayName, email) {
+  const name = String(displayName || '').trim();
+  if (name) return name;
+  return String(email || '').trim();
+}
+
+async function getUserStats(email, { displayName } = {}) {
   const now = Math.floor(Date.now() / 1000);
 
   let liveClient = null;
@@ -160,7 +166,7 @@ async function getUserStats(email) {
 
     // Generate VLESS config link and Clash YAML
     configLink = buildConfigLink(liveInbound, liveClient);
-    clashConfig = buildClashConfig(liveInbound, liveClient);
+    clashConfig = buildClashConfig(liveInbound, liveClient, config, displayName);
   }
 
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
@@ -265,15 +271,16 @@ function yamlQuote(value) {
 }
 
 // Generate a mihomo (Clash Meta) profile for Clash Verge subscription import.
-function buildClashConfig(inbound, client, cfg = config) {
+function buildClashConfig(inbound, client, cfg = config, displayName) {
   try {
     const f = parseVlessReality(inbound, client, cfg);
     if (!f) return null;
 
+    const nodeName = resolveNodeDisplayName(displayName, client.email);
     const groupName = '自动选择';
     const lines = [
       'proxies:',
-      `  - name: ${yamlQuote(f.email)}`,
+      `  - name: ${yamlQuote(nodeName)}`,
       '    type: vless',
       `    server: ${yamlQuote(f.server)}`,
       `    port: ${f.port}`,
@@ -296,7 +303,7 @@ function buildClashConfig(inbound, client, cfg = config) {
       `  - name: ${yamlQuote(groupName)}`,
       '    type: select',
       '    proxies:',
-      `      - ${yamlQuote(f.email)}`,
+      `      - ${yamlQuote(nodeName)}`,
       'rules:',
       `  - MATCH,${groupName}`,
     ];
@@ -439,6 +446,7 @@ module.exports = {
   getUserStats,
   getTrafficRanking,
   resolveMonthTraffic,
+  resolveNodeDisplayName,
   getLiveCounters,
   buildClashConfig,
 };

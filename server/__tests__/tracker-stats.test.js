@@ -146,6 +146,36 @@ describe('traffic tracker stats', () => {
     assert.doesNotMatch(profile, /\n\s+flow:/);
   });
 
+  it('uses config display name for Clash node when provided', () => {
+    const tracker = loadTracker({ inbounds: [] });
+    const inbound = {
+      protocol: 'vless',
+      port: 443,
+      settings: JSON.stringify({
+        clients: [{ email: '3239468786@qq.com', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+      }),
+      streamSettings: JSON.stringify({
+        realitySettings: {
+          serverNames: ['www.microsoft.com'],
+          shortIds: ['abcd'],
+          settings: { publicKey: 'pub-key', fingerprint: 'chrome' },
+        },
+      }),
+    };
+    const client = { email: '3239468786@qq.com' };
+
+    const profile = tracker.buildClashConfig(
+      inbound,
+      client,
+      { server: 'v.sunandyu.top' },
+      'iyu'
+    );
+
+    assert.match(profile, /- name: "iyu"/);
+    assert.match(profile, /proxies:\n\s+- "iyu"/);
+    assert.doesNotMatch(profile, /3239468786@qq.com/);
+  });
+
   it('ranks users by day, month, and total traffic', async () => {
     const tracker = loadTracker({
       inbounds: [{

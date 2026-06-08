@@ -321,7 +321,7 @@ app.get('/api/stats', rateLimiter, async (req, res) => {
   if (!user) return;
 
   try {
-    const stats = await tracker.getUserStats(user.email);
+    const stats = await tracker.getUserStats(user.email, { displayName: user.name });
     res.json({
       name: user.name,
       clashConfigUrl: stats.clashConfig ? getClashConfigUrl(req, user.token) : null,
@@ -338,7 +338,7 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
   if (!user) return;
 
   try {
-    const stats = await tracker.getUserStats(user.email);
+    const stats = await tracker.getUserStats(user.email, { displayName: user.name });
     if (!stats.clashConfig) return res.status(404).json({ error: '未找到 Clash 配置' });
 
     res.setHeader('content-type', 'text/yaml; charset=utf-8');
@@ -402,7 +402,7 @@ app.get('/api/admin/stats', rateLimiter, requireAdmin, async (req, res) => {
   if (!user) return;
 
   try {
-    const stats = await tracker.getUserStats(user.email);
+    const stats = await tracker.getUserStats(user.email, { displayName: user.name });
     res.json({
       name: user.name,
       token: user.token,
@@ -543,7 +543,7 @@ app.post('/api/admin/email/monthly', rateLimiter, requireAdmin, async (req, res)
     for (const user of users) {
       if (!user.email) continue;
       try {
-        const stats = await tracker.getUserStats(user.email);
+        const stats = await tracker.getUserStats(user.email, { displayName: user.name });
         await emailService.sendMonthlyReport(user, stats, config.publicUrl);
         sent.push({ name: user.name, email: user.email });
       } catch (err) {
@@ -568,7 +568,7 @@ if (emailService.isEnabled()) {
     const allUsers = userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.email);
     for (const user of allUsers) {
       try {
-        const stats = await tracker.getUserStats(user.email);
+        const stats = await tracker.getUserStats(user.email, { displayName: user.name });
         await emailService.sendMonthlyReport(user, stats, config.publicUrl);
         console.log(`[shareV] Monthly report sent to ${user.name} <${user.email}>`);
       } catch (err) {
@@ -590,7 +590,7 @@ if (emailService.isEnabled()) {
     for (const user of allUsers) {
       if (!user.email) continue;
       try {
-        const stats = await tracker.getUserStats(user.email);
+        const stats = await tracker.getUserStats(user.email, { displayName: user.name });
         const node = stats.node || {};
 
         // Check quota warning (> 80% of billing period usage)
