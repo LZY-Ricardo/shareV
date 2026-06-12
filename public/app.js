@@ -83,7 +83,7 @@
 
   function showLogin(mode = 'password') {
     document.getElementById('userName').textContent = 'shareV';
-    document.getElementById('updateTime').textContent = 'TRAFFIC MONITORING SYSTEM';
+    document.getElementById('updateTime').textContent = '流量监控系统';
     document.getElementById('content').innerHTML = `
       <div class="login-box">
         <div class="login-icon">
@@ -107,7 +107,7 @@
         </form>` : `
         <form class="login-form" id="tokenLoginForm">
           <input type="text" id="tokenInput" placeholder="访问码" autocomplete="off" spellcheck="false" />
-          <button id="tokenLoginBtn" type="submit">GO</button>
+          <button id="tokenLoginBtn" type="submit">登录</button>
         </form>`}
         <div class="login-hint">${mode === 'password' ? '使用 3X-UI 客户端邮箱登录，初始密码 123456' : '仍可使用管理员分享的访问链接或访问码'}</div>
       </div>`;
@@ -360,7 +360,7 @@
     document.getElementById('userName').textContent = data.name;
     const ts = new Date().toLocaleString('zh-CN');
     document.getElementById('updateTime').innerHTML =
-      `LAST_SYNC ${ts} <a href="#" class="back-link" onclick="handleLogout()">[切换]</a>`;
+      `上次同步 ${ts} <a href="#" class="back-link" onclick="handleLogout()">[切换]</a>`;
 
     const node = data.node || {};
     const online = data.online || false;
@@ -481,7 +481,7 @@
 
     // Chart
     html += '<div class="chart-section">';
-    html += '<div class="title" id="chartTitle">7 DAY TREND</div>';
+    html += '<div class="title" id="chartTitle">近7天趋势</div>';
     html += '<div class="chart-container"><canvas id="chart"></canvas></div>';
     html += '</div>';
 
@@ -658,7 +658,7 @@
 
     // Update chart title and redraw
     const title = document.getElementById('chartTitle');
-    if (title) title.textContent = days === 7 ? '7 DAY TREND' : '30 DAY TREND';
+    if (title) title.textContent = days === 7 ? '近7天趋势' : '近30天趋势';
     drawChart(slice);
 
     // Update toggle buttons
@@ -977,7 +977,7 @@
   function showError(msg) {
     showLoadingBar(false);
     document.getElementById('content').innerHTML =
-      `<div class="error-msg"><div>ERR:: ${esc(msg)}</div><button class="retry-btn" onclick="loadStats()">重试</button></div>`;
+      `<div class="error-msg"><div>错误:: ${esc(msg)}</div><button class="retry-btn" onclick="loadStats()">重试</button></div>`;
   }
 
   function esc(s) {
@@ -1000,6 +1000,6 @@
       foreground: '#2d3436',
       background: '#ffffff',
     });
-    return `<img src="${canvas.toDataURL()}" alt="QR Code" class="qr-img" />`;
+    return `<img src="${canvas.toDataURL()}" alt="二维码" class="qr-img" />`;
   }
 })();

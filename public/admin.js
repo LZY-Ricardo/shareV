@@ -45,8 +45,8 @@
       <div class="login-box">
         <div class="login-title">管理令牌</div>
         <form class="login-form" id="adminLoginForm">
-          <input type="password" id="adminTokenInput" placeholder="ADMIN_TOKEN" autocomplete="off" spellcheck="false" />
-          <button id="adminLoginBtn" type="submit">GO</button>
+          <input type="password" id="adminTokenInput" placeholder="管理令牌" autocomplete="off" spellcheck="false" />
+          <button id="adminLoginBtn" type="submit">进入</button>
         </form>
       </div>`);
     document.getElementById('adminTokenInput').focus();
@@ -184,7 +184,7 @@
       if (err.message !== 'Unauthorized') {
         setContent(`
           ${renderPageHeader()}
-          <div class="error-msg"><div>ERR:: ${esc(err.message)}</div><button class="retry-btn" data-action="view-ranking">重试</button></div>
+          <div class="error-msg"><div>错误:: ${esc(err.message)}</div><button class="retry-btn" data-action="view-ranking">重试</button></div>
         `);
         bindContentEvents();
       }
@@ -396,7 +396,7 @@
   }
 
   function showError(msg) {
-    setContent(`<div class="error-msg"><div>ERR:: ${esc(msg)}</div><button class="retry-btn" onclick="loadUsers()">重试</button></div>`);
+    setContent(`<div class="error-msg"><div>错误:: ${esc(msg)}</div><button class="retry-btn" onclick="loadUsers()">重试</button></div>`);
   }
 
   function formatBytes(bytes) {
