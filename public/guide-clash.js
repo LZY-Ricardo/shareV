@@ -30,7 +30,7 @@
           size: 512,
           level: 'M',
           background: '#ffffff',
-          foreground: '#000000',
+          foreground: '#2d3436',
         });
         qrContainer.innerHTML = `<img src="${canvas.toDataURL()}" alt="当前订阅二维码" class="qr-img" />`;
       }

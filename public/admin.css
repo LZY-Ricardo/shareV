@@ -1,8 +1,7 @@
-/* shareV Admin — Modern Dashboard */
+/* shareV Admin — Glassmorphism Light Theme */
 
-/* Override shared styles */
 body.admin-page {
-  background: #0b0f18;
+  background: linear-gradient(135deg, #f0f2f7, #f5f7fb);
 }
 
 body.admin-page > .grid-bg,
@@ -22,8 +21,8 @@ body.admin-page .admin-page-header {
   align-items: center;
   margin-bottom: 28px;
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-  animation: fadeDown 0.4s ease-out;
+  border-bottom: 1px solid var(--border-subtle);
+  animation: fadeDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body.admin-page .admin-page-title {
@@ -50,17 +49,19 @@ body.admin-page .admin-page-actions button {
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   color: var(--text);
 }
 
 body.admin-page .admin-page-actions button:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--bg-card-hover);
+  border-color: var(--primary-glow);
 }
 
 body.admin-page .admin-page-actions button:active {
@@ -75,7 +76,7 @@ body.admin-page .admin-page-actions button.btn-ghost {
 
 body.admin-page .admin-page-actions button.btn-ghost:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 body.admin-page .admin-page-actions button.loading {
@@ -100,9 +101,11 @@ body.admin-page .admin-view-tabs {
   display: flex;
   gap: 4px;
   padding: 3px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
 }
 
 body.admin-page .admin-view-tab {
@@ -119,19 +122,18 @@ body.admin-page .admin-view-tab {
 }
 
 body.admin-page .admin-view-tab.active {
-  background: rgba(0, 240, 255, 0.1);
-  color: var(--cyan);
-  box-shadow: inset 0 0 0 1px rgba(0, 240, 255, 0.15);
+  background: var(--primary-dim);
+  color: var(--primary);
 }
 
 body.admin-page .admin-view-tab:hover:not(.active) {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 /* ── Traffic Ranking ── */
 body.admin-page .admin-ranking-panel {
-  animation: fadeUp 0.45s ease-out 0.05s both;
+  animation: fadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 
 body.admin-page .admin-ranking-toolbar {
@@ -156,20 +158,22 @@ body.admin-page .admin-period-tab {
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.2s;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   color: var(--text-dim);
 }
 
 body.admin-page .admin-period-tab.active {
-  color: var(--cyan);
-  border-color: rgba(0, 240, 255, 0.25);
-  background: rgba(0, 240, 255, 0.08);
+  color: var(--primary);
+  border-color: var(--primary-glow);
+  background: var(--primary-dim);
 }
 
 body.admin-page .admin-period-tab:hover:not(.active) {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(0, 0, 0, 0.10);
 }
 
 body.admin-page .admin-ranking-meta {
@@ -190,29 +194,33 @@ body.admin-page .admin-rank-row {
   gap: 16px;
   align-items: center;
   padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
 }
 
 body.admin-page .admin-rank-row:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--bg-card-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 body.admin-page .admin-rank-row.top-1 {
-  border-color: rgba(255, 200, 64, 0.25);
-  background: rgba(255, 200, 64, 0.04);
+  border-color: rgba(253, 203, 110, 0.4);
+  background: rgba(253, 203, 110, 0.06);
 }
 
 body.admin-page .admin-rank-row.top-2 {
-  border-color: rgba(192, 192, 192, 0.2);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 body.admin-page .admin-rank-row.top-3 {
-  border-color: rgba(205, 127, 50, 0.2);
+  border-color: rgba(225, 112, 85, 0.15);
 }
 
 body.admin-page .admin-rank-num {
@@ -223,9 +231,9 @@ body.admin-page .admin-rank-num {
   text-align: center;
 }
 
-body.admin-page .admin-rank-row.top-1 .admin-rank-num { color: #ffc840; }
-body.admin-page .admin-rank-row.top-2 .admin-rank-num { color: #c8c8c8; }
-body.admin-page .admin-rank-row.top-3 .admin-rank-num { color: #cd7f32; }
+body.admin-page .admin-rank-row.top-1 .admin-rank-num { color: #b97a12; }
+body.admin-page .admin-rank-row.top-2 .admin-rank-num { color: #636e72; }
+body.admin-page .admin-rank-row.top-3 .admin-rank-num { color: var(--accent); }
 
 body.admin-page .admin-rank-name-row {
   display: flex;
@@ -251,7 +259,7 @@ body.admin-page .admin-rank-email {
 
 body.admin-page .admin-rank-bar-wrap {
   height: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.04);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -259,12 +267,12 @@ body.admin-page .admin-rank-bar-wrap {
 body.admin-page .admin-rank-bar {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--cyan), var(--teal));
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
   transition: width 0.4s ease;
 }
 
 body.admin-page .admin-rank-row.top-1 .admin-rank-bar {
-  background: linear-gradient(90deg, #ffc840, #ff9f43);
+  background: linear-gradient(90deg, #fdcb6e, #f0932b);
 }
 
 body.admin-page .admin-rank-stats {
@@ -275,7 +283,7 @@ body.admin-page .admin-rank-value {
   font-family: var(--mono);
   font-size: 20px;
   font-weight: 700;
-  color: var(--cyan);
+  color: var(--primary);
   line-height: 1.1;
 }
 
@@ -298,7 +306,7 @@ body.admin-page .admin-layout {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 24px;
-  animation: fadeUp 0.5s ease-out 0.1s both;
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 /* ── Sidebar ── */
@@ -309,12 +317,12 @@ body.admin-page .admin-sidebar {
   max-height: calc(100vh - 180px);
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: var(--border-subtle) transparent;
 }
 
 body.admin-page .admin-sidebar::-webkit-scrollbar { width: 4px; }
 body.admin-page .admin-sidebar::-webkit-scrollbar-track { background: transparent; }
-body.admin-page .admin-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+body.admin-page .admin-sidebar::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
 
 /* ── User List Items ── */
 body.admin-page .admin-user {
@@ -322,22 +330,22 @@ body.admin-page .admin-user {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   border: 1px solid transparent;
   background: transparent;
   margin-bottom: 0;
 }
 
 body.admin-page .admin-user:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(108, 92, 231, 0.04);
 }
 
 body.admin-page .admin-user.active {
   opacity: 1;
-  background: rgba(0, 240, 255, 0.06);
-  border-color: rgba(0, 240, 255, 0.12);
+  background: var(--primary-dim);
+  border-color: rgba(108, 92, 231, 0.12);
   animation: none;
   box-shadow: none;
 }
@@ -346,15 +354,15 @@ body.admin-page .status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #2a3040;
+  background: #dfe6e9;
   flex-shrink: 0;
   transition: all 0.3s;
   box-shadow: none;
 }
 
 body.admin-page .status-dot.online {
-  background: var(--green);
-  box-shadow: 0 0 6px rgba(0, 230, 118, 0.4);
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(0, 184, 148, 0.3);
 }
 
 body.admin-page .admin-user-info {
@@ -385,13 +393,14 @@ body.admin-page .admin-user-email {
 
 /* ── Detail Panel ── */
 body.admin-page .admin-main {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   padding: 28px;
   min-height: 400px;
-  box-shadow: none;
-  backdrop-filter: none;
+  box-shadow: var(--shadow-card);
 }
 
 body.admin-page .admin-empty {
@@ -447,9 +456,9 @@ body.admin-page .admin-detail-cards {
 }
 
 body.admin-page .admin-detail-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.45);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 16px;
 }
 
@@ -475,9 +484,9 @@ body.admin-page .admin-detail-card .unit {
   margin-left: 2px;
 }
 
-body.admin-page .admin-detail-card.cyan .value { color: var(--cyan); }
-body.admin-page .admin-detail-card.green .value { color: var(--green); }
-body.admin-page .admin-detail-card.amber .value { color: var(--amber); }
+body.admin-page .admin-detail-card.cyan .value { color: var(--primary); }
+body.admin-page .admin-detail-card.green .value { color: var(--success); }
+body.admin-page .admin-detail-card.amber .value { color: var(--accent); }
 
 /* ── Detail Link ── */
 body.admin-page .admin-detail-section {
@@ -501,10 +510,10 @@ body.admin-page .admin-detail-link-row {
 body.admin-page .admin-detail-link {
   flex: 1;
   padding: 10px 14px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--cyan);
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
   font-family: var(--mono);
   font-size: 12px;
   outline: none;
@@ -514,7 +523,7 @@ body.admin-page .admin-detail-link {
 }
 
 body.admin-page .admin-detail-link:focus {
-  border-color: rgba(0, 240, 255, 0.25);
+  border-color: var(--primary-glow);
 }
 
 body.admin-page .admin-detail-link-row button {
@@ -522,22 +531,24 @@ body.admin-page .admin-detail-link-row button {
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-subtle);
   color: var(--text);
 }
 
 body.admin-page .admin-detail-link-row button:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-card-hover);
 }
 
 body.admin-page .admin-detail-link-row button.success {
-  color: var(--green);
-  border-color: rgba(0, 230, 118, 0.3);
+  color: var(--success);
+  border-color: rgba(0, 184, 148, 0.3);
 }
 
 body.admin-page .admin-detail-link-row .btn-open {
@@ -545,20 +556,20 @@ body.admin-page .admin-detail-link-row .btn-open {
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
-  background: rgba(0, 240, 255, 0.08);
-  border: 1px solid rgba(0, 240, 255, 0.15);
-  color: var(--cyan);
+  background: var(--primary-dim);
+  border: 1px solid rgba(108, 92, 231, 0.15);
+  color: var(--primary);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
 }
 
 body.admin-page .admin-detail-link-row .btn-open:hover {
-  background: rgba(0, 240, 255, 0.14);
+  background: rgba(108, 92, 231, 0.15);
 }
 
 /* ── User List Stagger ── */

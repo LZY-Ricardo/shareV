@@ -705,7 +705,7 @@
     const maxVal = Math.max(peak, 1024 * 1024); // at least 1MB scale so small daily usage stays visible
 
     // Grid lines
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.06)';
+    ctx.strokeStyle = 'rgba(108, 92, 231, 0.08)';
     ctx.lineWidth = 0.5;
     ctx.fillStyle = '#3a4255';
     ctx.font = '10px "JetBrains Mono", monospace';
@@ -725,7 +725,7 @@
     const barCount = values.length;
     const barGap = barCount > 15 ? 2 : 8;
     const barW = Math.max(4, (chartW - barGap * (barCount - 1)) / barCount);
-    const barColors = ['#00f0ff', '#00c8ff', '#0096ff'];
+    const barColors = ['#6c5ce7', '#a29bfe', '#8c7ae6'];
     chartBars = [];
 
     values.forEach((v, i) => {
@@ -744,7 +744,7 @@
       // Date label
       const labelStep = Math.ceil(barCount / 7);
       if (i % labelStep === 0 || i === barCount - 1) {
-        ctx.fillStyle = '#3a4255';
+    ctx.fillStyle = '#8c95a1';
         ctx.font = '9px "JetBrains Mono", monospace';
         ctx.textAlign = 'center';
         const dateStr = daily[i].date ? daily[i].date.slice(5) : '';
@@ -997,7 +997,7 @@
       value: text,
       size: renderSize,
       level: 'M',
-      foreground: '#000000',
+      foreground: '#2d3436',
       background: '#ffffff',
     });
     return `<img src="${canvas.toDataURL()}" alt="QR Code" class="qr-img" />`;
