@@ -7,7 +7,7 @@ services:
       - "127.0.0.1:3000:3000"
     volumes:
       - ./data:/app/data
-      - ./config.json:/app/config.json:ro
+      - ./config.json:/app/config.json
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
