@@ -373,7 +373,7 @@ main { flex: 1; }
   box-sizing: border-box;
 }
 
-.pwd-toggle {
+.pwd-field .pwd-toggle {
   position: absolute;
   top: 50%;
   right: 6px;
@@ -389,28 +389,38 @@ main { flex: 1; }
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
+  font: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
   transition: color 0.2s ease, background 0.2s ease;
 }
 
-.pwd-toggle:hover {
+.pwd-field .pwd-toggle:hover {
   color: var(--text-bright);
   background: var(--primary-dim);
+  box-shadow: none;
+  transform: translateY(-50%);
 }
 
-.pwd-toggle:focus-visible {
+.pwd-field .pwd-toggle:active {
+  transform: translateY(-50%);
+}
+
+.pwd-field .pwd-toggle:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--primary-dim);
 }
 
-.pwd-toggle .eye-closed {
+.pwd-field .pwd-toggle .eye-closed {
   display: none;
 }
 
-.pwd-toggle.is-visible .eye-open {
+.pwd-field .pwd-toggle.is-visible .eye-open {
   display: none;
 }
 
-.pwd-toggle.is-visible .eye-closed {
+.pwd-field .pwd-toggle.is-visible .eye-closed {
   display: block;
 }
 
