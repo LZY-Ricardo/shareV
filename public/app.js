@@ -5,6 +5,34 @@
 
   const fetchOpts = { credentials: 'same-origin' };
 
+  function pwdToggleBtnHTML(targetId) {
+    return `<button type="button" class="pwd-toggle" data-target="${targetId}" aria-label="显示密码">
+              <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.5 0-10-7-10-7a18.94 18.94 0 0 1 4.22-5.22"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/>
+                <path d="M14.12 14.12A3 3 0 1 1 9.88 9.88"/>
+                <line x1="2" y1="2" x2="22" y2="22"/>
+              </svg>
+            </button>`;
+  }
+
+  function bindPwdToggles(scope) {
+    scope.querySelectorAll('.pwd-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = scope.querySelector('#' + btn.dataset.target);
+        if (!input) return;
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.classList.toggle('is-visible', show);
+        btn.setAttribute('aria-label', show ? '隐藏密码' : '显示密码');
+      });
+    });
+  }
+
   init();
 
   async function init() {
@@ -102,7 +130,10 @@
         ${mode === 'password' ? `
         <form class="login-form login-form-stacked" id="passwordLoginForm">
           <input type="text" id="emailInput" placeholder="QQ 邮箱（与 3X-UI 一致）" autocomplete="username" spellcheck="false" />
-          <input type="password" id="passwordInput" placeholder="密码" autocomplete="current-password" />
+          <div class="pwd-field">
+            <input type="password" id="passwordInput" placeholder="密码" autocomplete="current-password" />
+            ${pwdToggleBtnHTML('passwordInput')}
+          </div>
           <button id="loginBtn" type="submit">登录</button>
         </form>` : `
         <form class="login-form" id="tokenLoginForm">
@@ -120,6 +151,7 @@
         e.preventDefault();
         handlePasswordLogin();
       });
+      bindPwdToggles(form);
     } else {
       const form = document.getElementById('tokenLoginForm');
       document.getElementById('tokenInput').focus();
@@ -207,9 +239,18 @@
         <h2 class="pwd-modal-title" id="pwdModalTitle">请修改初始密码</h2>
         <p class="pwd-modal-desc">您仍在使用默认密码（123456），为保障账号安全请立即修改。</p>
         <form class="login-form login-form-stacked pwd-modal-form" id="changePasswordForm">
-          <input type="password" id="pwdCurrent" placeholder="当前密码" autocomplete="current-password" required />
-          <input type="password" id="pwdNew" placeholder="新密码（至少 6 位）" autocomplete="new-password" required />
-          <input type="password" id="pwdConfirm" placeholder="确认新密码" autocomplete="new-password" required />
+          <div class="pwd-field">
+            <input type="password" id="pwdCurrent" placeholder="当前密码" autocomplete="current-password" required />
+            ${pwdToggleBtnHTML('pwdCurrent')}
+          </div>
+          <div class="pwd-field">
+            <input type="password" id="pwdNew" placeholder="新密码（至少 6 位）" autocomplete="new-password" required />
+            ${pwdToggleBtnHTML('pwdNew')}
+          </div>
+          <div class="pwd-field">
+            <input type="password" id="pwdConfirm" placeholder="确认新密码" autocomplete="new-password" required />
+            ${pwdToggleBtnHTML('pwdConfirm')}
+          </div>
           <button type="submit" id="pwdSubmitBtn">保存新密码</button>
         </form>
         <button type="button" class="pwd-modal-later" id="pwdLaterBtn">稍后再说</button>
@@ -229,6 +270,8 @@
       e.preventDefault();
       handleChangePassword();
     });
+
+    bindPwdToggles(overlay);
 
     overlay.querySelector('#pwdCurrent').focus();
   }

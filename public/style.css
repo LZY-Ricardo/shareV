@@ -362,6 +362,58 @@ main { flex: 1; }
   max-width: none;
 }
 
+.pwd-field {
+  position: relative;
+  width: 100%;
+}
+
+.pwd-field input {
+  width: 100%;
+  padding-right: 44px;
+  box-sizing: border-box;
+}
+
+.pwd-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.pwd-toggle:hover {
+  color: var(--text-bright);
+  background: var(--primary-dim);
+}
+
+.pwd-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-dim);
+}
+
+.pwd-toggle .eye-closed {
+  display: none;
+}
+
+.pwd-toggle.is-visible .eye-open {
+  display: none;
+}
+
+.pwd-toggle.is-visible .eye-closed {
+  display: block;
+}
+
 .pwd-modal-later {
   display: block;
   width: 100%;
