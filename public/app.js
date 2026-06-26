@@ -585,10 +585,22 @@
       html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
       html += '<button class="config-import-btn" onclick="importToV2RayN()">复制并打开 v2rayN</button>';
       html += '<button class="config-help-btn" onclick="openGuide()">查看导入教程</button>';
-      if (nodes.length > 1) {
-        html += `<div class="config-batch-tip">需要一次导入全部节点？切换到上方 <strong>Clash 订阅</strong>，v2rayN / Clash Verge 都支持。</div>`;
-      }
       html += '</div>';
+      // v2rayN-native subscription (base64 URL list) — only show when multiple nodes exist.
+      // v2rayN's generic subscription does not parse Clash YAML, so we expose a dedicated URL.
+      if (nodes.length > 1 && data.v2raynConfigUrl) {
+        html += `<div class="config-sub-box">
+          <div class="config-sub-label">v2rayN 订阅链接 <span class="config-sub-tag">多节点</span></div>
+          <div class="config-sub-row">
+            <input type="text" class="config-link" id="v2raynConfigUrl" value="${esc(data.v2raynConfigUrl)}" readonly onclick="this.select()" />
+            <button class="config-copy-btn" onclick="copyV2raynConfig()">复制订阅</button>
+          </div>
+          <div class="config-sub-hint">在 v2rayN「订阅设置 → 添加」粘贴此 URL，更新后两个节点都会出现</div>
+        </div>`;
+      }
+      if (nodes.length > 1) {
+        html += `<div class="config-batch-tip">Clash Verge 用户：直接用上方 <strong>Clash 订阅</strong> 即可。</div>`;
+      }
       html += '<div class="qr-container" id="qrContainer"></div>';
       html += '<div class="config-hint">不会导入？打开教程按步骤操作。也可以扫描二维码导入 · <a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener" class="config-dl">下载 v2rayN</a></div>';
       html += '</div>';
@@ -913,6 +925,18 @@
       const btn = document.querySelector('.config-clash-btn');
       if (btn) { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制订阅', 1500); }
     }).catch(() => {});
+  };
+
+  window.copyV2raynConfig = function () {
+    const input = document.getElementById('v2raynConfigUrl');
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = input.parentElement.querySelector('button');
+      if (btn) { const t = btn.textContent; btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = t, 1500); }
+      toast('v2rayN 订阅链接已复制，去客户端「订阅设置」添加', 'success');
+    }).catch(() => {
+      toast('复制失败，请手动选中链接后复制', 'error');
+    });
   };
 
   window.importToV2RayN = async function () {

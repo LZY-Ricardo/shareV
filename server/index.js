@@ -247,6 +247,10 @@ function getClashConfigUrl(req, token) {
   return `${getBaseUrl(req)}/sub/clash?token=${encodeURIComponent(token)}`;
 }
 
+function getV2raynConfigUrl(req, token) {
+  return `${getBaseUrl(req)}/sub/v2rayn?token=${encodeURIComponent(token)}`;
+}
+
 // ── Auth routes ──
 app.post('/api/auth/login', authRateLimiter, async (req, res) => {
   const account = (req.body?.email || req.body?.username || req.body?.account || '').trim();
@@ -325,6 +329,7 @@ app.get('/api/stats', rateLimiter, async (req, res) => {
     res.json({
       name: user.name,
       clashConfigUrl: stats.clashConfig ? getClashConfigUrl(req, user.token) : null,
+      v2raynConfigUrl: (Array.isArray(stats.nodes) && stats.nodes.length > 0) ? getV2raynConfigUrl(req, user.token) : null,
       ...stats,
     });
   } catch (err) {
@@ -364,6 +369,44 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
     res.send(`${stats.clashConfig}\n`);
   } catch (err) {
     console.error('[shareV] Clash subscription error:', err.message);
+    res.status(500).json({ error: '服务暂时不可用' });
+  }
+});
+
+// v2rayN-native subscription: base64-encoded vless:// URL list (one per line).
+// v2rayN does not parse Clash YAML in its generic subscription flow; it expects
+// a base64 payload of vmess/vless URLs. This endpoint makes the multi-node
+// setup importable in v2rayN just like any normal subscription.
+app.get('/sub/v2rayn', rateLimiter, async (req, res) => {
+  const user = getUserByToken(req, res);
+  if (!user) return;
+
+  try {
+    const stats = await tracker.getUserStats(user.email, { displayName: user.name });
+    const nodes = Array.isArray(stats.nodes) ? stats.nodes : [];
+    const links = nodes.map(n => n.configLink).filter(Boolean);
+    if (links.length === 0 && !stats.configLink) {
+      return res.status(404).json({ error: '未找到可用节点' });
+    }
+    if (links.length === 0) links.push(stats.configLink);
+
+    const payload = Buffer.from(links.join('\n') + '\n', 'utf-8').toString('base64');
+
+    res.setHeader('content-type', 'text/plain; charset=utf-8');
+    res.setHeader('cache-control', 'no-store');
+    res.setHeader('profile-update-interval', '1');
+    if (stats.node) {
+      const upload = stats.thisMonth ? stats.thisMonth.up : 0;
+      const download = stats.thisMonth ? stats.thisMonth.down : 0;
+      const total = stats.node.totalGB ? Math.round(stats.node.totalGB * 1024 * 1024 * 1024) : 0;
+      const now = new Date();
+      const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const expire = Math.floor(nextReset.getTime() / 1000);
+      res.setHeader("subscription-userinfo", `upload=${upload}; download=${download}; total=${total}; expire=${expire}`);
+    }
+    res.send(payload);
+  } catch (err) {
+    console.error('[shareV] v2rayN subscription error:', err.message);
     res.status(500).json({ error: '服务暂时不可用' });
   }
 });
