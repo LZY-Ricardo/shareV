@@ -561,6 +561,36 @@ app.post('/api/admin/email/monthly', rateLimiter, requireAdmin, async (req, res)
   }
 });
 
+// ── Admin: send CF CDN upgrade announcement to one or all users ──
+app.post('/api/admin/email/cf-cdn-notice', rateLimiter, requireAdmin, async (req, res) => {
+  try {
+    const token = (req.query.token || '').trim();
+
+    const users = token
+      ? [userDirectory.findByToken(token)].filter(Boolean)
+      : userDirectory.listUsers('').map(u => ({ ...u, ...config.users[u.uuid] })).filter(u => u.email);
+
+    const sent = [];
+    const failed = [];
+    for (const user of users) {
+      if (!user.email) continue;
+      try {
+        await emailService.sendCfCdnAnnouncement(user, config.publicUrl);
+        sent.push({ name: user.name, email: user.email });
+      } catch (err) {
+        failed.push({ name: user.name, error: err.message });
+      }
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    console.log(`[shareV] CF CDN announcement sent: ${sent.length}/${sent.length + failed.length}`);
+    res.json({ sent, failed });
+  } catch (err) {
+    console.error('[shareV] CF CDN announcement error:', err.message);
+    res.status(500).json({ error: '发送失败: ' + err.message });
+  }
+});
+
 // ── Email: monthly report on the 1st of each month at 9am ──
 if (emailService.isEnabled()) {
   cron.schedule('0 9 1 * *', async () => {

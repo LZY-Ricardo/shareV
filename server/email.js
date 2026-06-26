@@ -318,6 +318,102 @@ function buildWarningHtml(user, stats, type) {
   return p.join('');
 }
 
+// ── CF CDN upgrade announcement ──
+
+function buildCfCdnAnnouncementHtml(user, publicUrl) {
+  let p = [];
+  p.push(wrapperStart('节点升级通知'));
+
+  // Success banner (green)
+  p.push(`<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;background:#dcfce7;border:1px solid #86efac;border-radius:8px;">
+<tr><td style="padding:12px 16px;font-family:-apple-system,sans-serif;font-size:13px;font-weight:600;color:#166534;">✓ 节点升级完成：已接入 Cloudflare CDN</td></tr>
+</table>`);
+
+  p.push(greeting(`Hi <strong style="color:${TEXT_DARK};">${escHtml(user.name)}</strong>，你的代理节点已升级，<strong style="color:${TEXT_DARK};">请重新导入订阅</strong>以获得更稳定的连接。`));
+
+  // What changed
+  p.push(sectionStart('本次升级内容'));
+  p.push(`<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+  <td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;vertical-align:top;width:24px;">
+    <span style="color:${PRIMARY};font-weight:700;">1.</span>
+  </td>
+  <td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">
+    <strong style="color:${TEXT_DARK};">新增 CF CDN 节点</strong>：通过 Cloudflare CDN 中转，IP 不再直连，有效规避 IP 被封。
+  </td>
+</tr>
+<tr>
+  <td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;vertical-align:top;width:24px;">
+    <span style="color:${PRIMARY};font-weight:700;">2.</span>
+  </td>
+  <td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">
+    <strong style="color:${TEXT_DARK};">保留 REALITY 直连</strong>：作为备用，速度更快但偶尔会被封 IP。
+  </td>
+</tr>
+<tr>
+  <td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;vertical-align:top;width:24px;">
+    <span style="color:${PRIMARY};font-weight:700;">3.</span>
+  </td>
+  <td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">
+    <strong style="color:${TEXT_DARK};">Clash 订阅已合并双节点</strong>：客户端会自动选最快的，无需手动切换。
+  </td>
+</tr>
+</table>`);
+  p.push(sectionEnd);
+
+  // Subscription link
+  const clashUrl = publicUrl
+    ? `${publicUrl}/sub/clash?token=${encodeURIComponent(user.token)}`
+    : null;
+  if (clashUrl) {
+    p.push(sectionStart('请重新导入 Clash 订阅'));
+    p.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;padding-bottom:8px;">
+  在 Clash Verge / mihomo 中：<br>
+  1. 删除旧的订阅<br>
+  2. 添加新订阅，粘贴下方链接<br>
+  3. 更新并切换到新订阅
+</div>`);
+    p.push(linkBox(clashUrl));
+    p.push(`<div style="padding-top:8px;font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_MUTED};">链接含你的专属 token，请勿分享给他人</div>`);
+    p.push(sectionEnd);
+  }
+
+  // FAQ
+  p.push(sectionStart('常见疑问'));
+  p.push(`<table width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;">
+<tr>
+  <td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;color:${PRIMARY};width:100%;">Q：旧节点还能用吗？</td>
+</tr>
+<tr>
+  <td style="padding:0 0 10px 0;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};line-height:1.5;">能用，但建议尽快切换。REALITY 直连 IP 已被墙，CF CDN 是更稳定的选择。</td>
+</tr>
+<tr>
+  <td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;color:${PRIMARY};">Q：速度会变慢吗？</td>
+</tr>
+<tr>
+  <td style="padding:0 0 10px 0;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};line-height:1.5;">CF CDN 走中转，延迟略高，但带宽稳定且不受 IP 封锁影响。日常使用基本无感。</td>
+</tr>
+<tr>
+  <td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;color:${PRIMARY};">Q：V2RayN / Sing-box 用户？</td>
+</tr>
+<tr>
+  <td style="padding:0 0 0 0;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};line-height:1.5;">直接在看板复制 vless:// 链接，选择 CF CDN 节点导入。</td>
+</tr>
+</table>`);
+  p.push(sectionEnd);
+
+  // Dashboard link
+  if (publicUrl && user.token) {
+    p.push(`<table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 0 0;background:${PRIMARY};border-radius:8px;">
+<tr><td style="padding:12px;text-align:center;">
+  <a href="${publicUrl}/#t=${encodeURIComponent(user.token)}" style="font-family:-apple-system,sans-serif;font-size:14px;color:#ffffff;text-decoration:none;font-weight:500;">打开看板查看节点 →</a>
+</td></tr></table>`);
+  }
+
+  p.push(wrapperEnd);
+  return p.join('');
+}
+
 // ── Test email ──
 
 function buildTestHtml(user) {
@@ -373,10 +469,17 @@ async function sendTestEmail(user) {
   return sendEmail(user.email, 'shareV · 测试邮件', html);
 }
 
+async function sendCfCdnAnnouncement(user, publicUrl) {
+  if (!user.email) throw new Error('用户未配置邮箱地址');
+  const html = buildCfCdnAnnouncementHtml(user, publicUrl);
+  return sendEmail(user.email, 'shareV · 节点升级通知：已接入 Cloudflare CDN', html);
+}
+
 module.exports = {
   init,
   isEnabled,
   sendMonthlyReport,
   sendQuotaWarning,
   sendTestEmail,
+  sendCfCdnAnnouncement,
 };
