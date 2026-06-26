@@ -366,12 +366,12 @@ function buildCfCdnAnnouncementHtml(user, publicUrl) {
     ? `${publicUrl}/sub/clash?token=${encodeURIComponent(user.token)}`
     : null;
   if (clashUrl) {
-    p.push(sectionStart('请重新导入 Clash 订阅'));
-    p.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;padding-bottom:8px;">
-  在 Clash Verge / mihomo 中：<br>
-  1. 删除旧的订阅<br>
-  2. 添加新订阅，粘贴下方链接<br>
-  3. 更新并切换到新订阅
+    p.push(sectionStart('如何更新订阅'));
+    p.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;padding-bottom:10px;">
+  <strong style="color:${TEXT_DARK};">推荐（最简单）：</strong>打开 shareV 看板，点击 <strong style="color:${PRIMARY};">「导入 Clash Verge」</strong> 按钮，客户端会自动弹窗完成导入，无需手动复制。
+</div>`);
+    p.push(`<div style="font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT_LIGHT};line-height:1.6;padding-bottom:6px;">
+  <strong style="color:${TEXT_DARK};">备选（手动）：</strong>复制下方订阅链接，在 Clash Verge / mihomo 中添加：
 </div>`);
     p.push(linkBox(clashUrl));
     p.push(`<div style="padding-top:8px;font-family:-apple-system,sans-serif;font-size:11px;color:${TEXT_MUTED};">链接含你的专属 token，请勿分享给他人</div>`);
@@ -402,11 +402,12 @@ function buildCfCdnAnnouncementHtml(user, publicUrl) {
 </table>`);
   p.push(sectionEnd);
 
-  // Dashboard link
+  // Dashboard link - prominent CTA for one-click import
   if (publicUrl && user.token) {
-    p.push(`<table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 0 0;background:${PRIMARY};border-radius:8px;">
-<tr><td style="padding:12px;text-align:center;">
-  <a href="${publicUrl}/#t=${encodeURIComponent(user.token)}" style="font-family:-apple-system,sans-serif;font-size:14px;color:#ffffff;text-decoration:none;font-weight:500;">打开看板查看节点 →</a>
+    p.push(`<table width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0 4px 0;background:${PRIMARY};border-radius:8px;">
+<tr><td style="padding:14px 12px;text-align:center;">
+  <a href="${publicUrl}/#t=${encodeURIComponent(user.token)}" style="font-family:-apple-system,sans-serif;font-size:15px;color:#ffffff;text-decoration:none;font-weight:600;">打开 shareV 看板，一键导入 Clash →</a>
+  <div style="font-family:-apple-system,sans-serif;font-size:11px;color:rgba(255,255,255,0.8);padding-top:6px;">登录后在 Clash 面板点击「导入 Clash Verge」</div>
 </td></tr></table>`);
   }
 
