@@ -1160,6 +1160,23 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   text-align: center;
 }
 
+.config-batch-tip {
+  margin-top: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-light);
+  background: var(--card-bg);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.config-batch-tip strong {
+  color: var(--primary);
+  font-weight: 600;
+}
+
 /* ── Guide Page ── */
 .guide-container {
   max-width: 1080px;
