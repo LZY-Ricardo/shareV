@@ -403,11 +403,11 @@ function buildCfCdnAnnouncementHtml(user, publicUrl) {
   p.push(sectionEnd);
 
   // Dashboard link - prominent CTA for one-click import
-  if (publicUrl && user.token) {
+  if (publicUrl) {
     p.push(`<table width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0 4px 0;background:${PRIMARY};border-radius:8px;">
 <tr><td style="padding:14px 12px;text-align:center;">
-  <a href="${publicUrl}/#t=${encodeURIComponent(user.token)}" style="font-family:-apple-system,sans-serif;font-size:15px;color:#ffffff;text-decoration:none;font-weight:600;">打开 shareV 看板，一键导入 Clash →</a>
-  <div style="font-family:-apple-system,sans-serif;font-size:11px;color:rgba(255,255,255,0.8);padding-top:6px;">登录后在 Clash 面板点击「导入 Clash Verge」</div>
+  <a href="${publicUrl}/" style="font-family:-apple-system,sans-serif;font-size:15px;color:#ffffff;text-decoration:none;font-weight:600;">打开 shareV 网站，一键导入 Clash →</a>
+  <div style="font-family:-apple-system,sans-serif;font-size:11px;color:rgba(255,255,255,0.8);padding-top:6px;">用 QQ 邮箱登录后，在 Clash 面板点击「导入 Clash Verge」</div>
 </td></tr></table>`);
   }
 
