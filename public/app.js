@@ -129,7 +129,7 @@
         </div>
         ${mode === 'password' ? `
         <form class="login-form login-form-stacked" id="passwordLoginForm">
-          <input type="text" id="emailInput" placeholder="QQ 邮箱（与 3X-UI 一致）" autocomplete="username" spellcheck="false" />
+          <input type="text" id="emailInput" placeholder="QQ 邮箱" autocomplete="username" spellcheck="false" />
           <div class="pwd-field">
             <input type="password" id="passwordInput" placeholder="密码" autocomplete="current-password" />
             ${pwdToggleBtnHTML('passwordInput')}
@@ -140,7 +140,7 @@
           <input type="text" id="tokenInput" placeholder="访问码" autocomplete="off" spellcheck="false" />
           <button id="tokenLoginBtn" type="submit">登录</button>
         </form>`}
-        <div class="login-hint">${mode === 'password' ? '使用 3X-UI 客户端邮箱登录，初始密码 123456' : '仍可使用管理员分享的访问链接或访问码'}</div>
+        <div class="login-hint">${mode === 'password' ? '使用 QQ 邮箱登录，初始密码 123456' : '仍可使用管理员分享的访问链接或访问码'}</div>
       </div>`;
 
     if (mode === 'password') {
