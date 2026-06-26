@@ -105,28 +105,43 @@ function resolveNodeDisplayName(displayName, email) {
 async function getUserStats(email, { displayName } = {}) {
   const now = Math.floor(Date.now() / 1000);
 
-  let liveClient = null;
-  let liveInbound = null;
+  // Collect every inbound where this email appears. A user typically exists in
+  // both the legacy REALITY inbound and the new CF CDN (WS+TLS) inbound; we
+  // surface all of them so the frontend can offer a node picker.
+  const liveMatches = [];
   try {
     const inbounds = await xui.getInbounds();
     for (const inbound of inbounds) {
       if (!inbound.clientStats) continue;
       const client = inbound.clientStats.find(c => c.email === email);
-      if (client) {
-        liveClient = client;
-        liveInbound = inbound;
-        break;
-      }
+      if (client) liveMatches.push({ inbound, client });
     }
   } catch (err) {
     console.warn('[tracker] Failed to fetch live data:', err.message);
   }
+
+  // Rank CF CDN (WS+TLS) ahead of REALITY so the recommended node is the one
+  // that actually works behind the GFW IP block.
+  liveMatches.sort((a, b) => {
+    const rank = (m) => {
+      try {
+        const s = JSON.parse(m.inbound.streamSettings || '{}');
+        return s.network === 'ws' ? 0 : 1;
+      } catch { return 1; }
+    };
+    return rank(a) - rank(b);
+  });
+
+  const primary = liveMatches[0] || null;
+  const liveClient = primary ? primary.client : null;
+  const liveInbound = primary ? primary.inbound : null;
 
   const latestSnapshot = db.getLatestSnapshot(email);
   let { up: totalUp, down: totalDown } = snapshotTrafficTotal(latestSnapshot);
   let nodeInfo = null;
   let configLink = null;
   let clashConfig = null;
+  let nodes = [];
 
   const daily = db.getDailyTraffic(email, 30);
 
@@ -146,7 +161,32 @@ async function getUserStats(email, { displayName } = {}) {
       totalDown = totalTraffic.down;
     }
 
-    // Get limitIp from settings.clients (not available in clientStats)
+    // Per-node metadata so the frontend can render a node picker
+    nodes = liveMatches.map(({ inbound, client }) => {
+      let limitIp = 0;
+      try {
+        const settings = JSON.parse(inbound.settings || '{}');
+        const clientCfg = (settings.clients || []).find(c => c.email === email);
+        if (clientCfg) limitIp = clientCfg.limitIp || 0;
+      } catch {}
+      let stream = {};
+      try { stream = JSON.parse(inbound.streamSettings || '{}'); } catch {}
+      const isWs = stream.network === 'ws';
+      return {
+        id: inbound.id,
+        tag: inbound.tag || `inbound-${inbound.id}`,
+        remark: inbound.remark,
+        protocol: isWs ? 'ws' : 'reality',
+        port: inbound.port,
+        enable: client.enable,
+        totalGB: client.total ? (client.total / (1024 ** 3)).toFixed(1) : 0,
+        expiryTime: client.expiryTime,
+        limitIp,
+        configLink: buildConfigLink(inbound, client),
+      };
+    });
+
+    // Backwards-compatible single-node fields use the primary (recommended) node
     let limitIp = 0;
     try {
       const settings = JSON.parse(liveInbound.settings || '{}');
@@ -164,9 +204,9 @@ async function getUserStats(email, { displayName } = {}) {
       limitIp,
     };
 
-    // Generate VLESS config link and Clash YAML
+    // Generate VLESS config link (primary node) + merged Clash YAML (all nodes)
     configLink = buildConfigLink(liveInbound, liveClient);
-    clashConfig = buildClashConfig(liveInbound, liveClient, config, displayName);
+    clashConfig = buildMultiClashConfig(liveMatches, config, displayName);
   }
 
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
@@ -218,14 +258,16 @@ async function getUserStats(email, { displayName } = {}) {
     deviceList,
     daily,
     node: nodeInfo,
+    nodes,
     configLink,
     clashConfig,
     avgSpeed,
   };
 }
 
-// Parse inbound+client into fields shared by vless:// link and Clash YAML
-function parseVlessReality(inbound, client, cfg = config) {
+// Parse inbound+client into fields shared by vless:// link and Clash YAML.
+// Supports both REALITY (tcp) and VLESS+WS+TLS (via CF CDN) — distinguished by `kind`.
+function parseVlessInbound(inbound, client, cfg = config) {
   if (!cfg || !cfg.server || inbound.protocol !== 'vless') return null;
   const settings = JSON.parse(inbound.settings || '{}');
   const clientCfg = (settings.clients || []).find(c => c.email === client.email);
@@ -234,31 +276,67 @@ function parseVlessReality(inbound, client, cfg = config) {
   const flow = typeof clientCfg.flow === 'string' ? clientCfg.flow.trim() : '';
 
   const stream = JSON.parse(inbound.streamSettings || '{}');
-  const reality = stream.realitySettings || {};
-  const pbk = reality.settings?.publicKey;
-  const sni = (reality.serverNames || [])[0];
-  const sid = (reality.shortIds || [])[0] ?? '';
-  const fp = reality.settings?.fingerprint || 'chrome';
-  if (!pbk || !sni) return null;
+  const network = stream.network || 'tcp';
+  const fp = 'chrome';
 
-  return { uuid, server: cfg.server, port: inbound.port, sni, fp, pbk, sid, flow, email: client.email };
+  // VLESS+WS+TLS path (CF CDN) — x-ui "network":"ws","security":"tls"
+  if (network === 'ws') {
+    const tls = stream.tlsSettings || {};
+    const ws = stream.wsSettings || {};
+    const sni = tls.serverName || cfg.server;
+    const wsPath = ws.path || '/';
+    const wsHost = ws.host || sni;
+    return { kind: 'ws', uuid, server: cfg.server, port: inbound.port, sni, fp, flow, wsPath, wsHost, email: client.email };
+  }
+
+  // REALITY path — legacy direct connection (subject to GFW IP block).
+  // Trust realitySettings presence — 3X-UI may omit the `security` field on older snapshots.
+  if (stream.realitySettings) {
+    const reality = stream.realitySettings || {};
+    const pbk = reality.settings?.publicKey;
+    const sni = (reality.serverNames || [])[0];
+    const sid = (reality.shortIds || [])[0] ?? '';
+    const realityFp = reality.settings?.fingerprint || fp;
+    if (!pbk || !sni) return null;
+    return { kind: 'reality', uuid, server: cfg.server, port: inbound.port, sni, fp: realityFp, pbk, sid, flow, email: client.email };
+  }
+
+  return null;
 }
 
-function buildConfigLink(inbound, client) {
+// Backwards-compatible alias
+const parseVlessReality = parseVlessInbound;
+
+function buildConfigLink(inbound, client, cfg = config) {
   try {
-    const f = parseVlessReality(inbound, client);
+    const f = parseVlessInbound(inbound, client, cfg);
     if (!f) return null;
 
-    const params = [
-      'encryption=none',
-      'security=reality',
-      `sni=${encodeURIComponent(f.sni)}`,
-      `fp=${encodeURIComponent(f.fp)}`,
-      `pbk=${encodeURIComponent(f.pbk)}`,
-      `sid=${encodeURIComponent(f.sid)}`,
-      ...(f.flow ? [`flow=${encodeURIComponent(f.flow)}`] : []),
-      'type=tcp',
-    ].join('&');
+    let params;
+    if (f.kind === 'ws') {
+      // VLESS+WS+TLS via CF CDN — proxy through Cloudflare
+      params = [
+        'encryption=none',
+        'security=tls',
+        `sni=${encodeURIComponent(f.sni)}`,
+        `fp=${encodeURIComponent(f.fp)}`,
+        'type=ws',
+        `host=${encodeURIComponent(f.wsHost)}`,
+        `path=${encodeURIComponent(f.wsPath)}`,
+      ].join('&');
+    } else {
+      // REALITY direct connection
+      params = [
+        'encryption=none',
+        'security=reality',
+        `sni=${encodeURIComponent(f.sni)}`,
+        `fp=${encodeURIComponent(f.fp)}`,
+        `pbk=${encodeURIComponent(f.pbk)}`,
+        `sid=${encodeURIComponent(f.sid)}`,
+        ...(f.flow ? [`flow=${encodeURIComponent(f.flow)}`] : []),
+        'type=tcp',
+      ].join('&');
+    }
 
     return `vless://${f.uuid}@${f.server}:${f.port}?${params}#${encodeURIComponent(f.email)}`;
   } catch {
@@ -270,44 +348,100 @@ function yamlQuote(value) {
   return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
-// Generate a mihomo (Clash Meta) profile for Clash Verge subscription import.
+// Build a single proxy block (lines after "proxies:"). Returns { name, lines } or null.
+// withSuffix adds " (CF)" / " (直连)" to distinguish same-user nodes across inbounds.
+function buildSingleProxyBlock(f, displayName, { withSuffix = false } = {}) {
+  if (!f) return null;
+  const baseName = resolveNodeDisplayName(displayName, f.email);
+  const nodeName = withSuffix
+    ? baseName + (f.kind === 'ws' ? ' (CF)' : ' (直连)')
+    : baseName;
+
+  const lines = [
+    `  - name: ${yamlQuote(nodeName)}`,
+    '    type: vless',
+    `    server: ${yamlQuote(f.server)}`,
+    `    port: ${f.port}`,
+    `    uuid: ${yamlQuote(f.uuid)}`,
+    '    encryption: ""',
+    '    udp: true',
+  ];
+
+  if (f.kind === 'ws') {
+    // VLESS+WS+TLS via CF CDN
+    lines.push('    network: ws');
+    lines.push('    tls: true');
+    lines.push(`    servername: ${yamlQuote(f.sni)}`);
+    lines.push(`    client-fingerprint: ${yamlQuote(f.fp)}`);
+    lines.push('    skip-cert-verify: true');
+    lines.push('    ws-opts:');
+    lines.push(`      path: ${yamlQuote(f.wsPath)}`);
+    lines.push('      headers:');
+    lines.push(`        Host: ${yamlQuote(f.wsHost)}`);
+  } else {
+    // REALITY direct connection
+    lines.push('    network: tcp');
+    lines.push('    packet-encoding: xudp');
+    lines.push('    tls: true');
+    if (f.flow) lines.push(`    flow: ${f.flow}`);
+    lines.push(`    servername: ${yamlQuote(f.sni)}`);
+    lines.push(`    client-fingerprint: ${yamlQuote(f.fp)}`);
+    lines.push('    skip-cert-verify: true');
+    lines.push('    reality-opts:');
+    lines.push(`      public-key: ${yamlQuote(f.pbk)}`);
+    lines.push(`      short-id: ${yamlQuote(f.sid)}`);
+    lines.push('    smux:');
+    lines.push('      enabled: false');
+  }
+
+  return { name: nodeName, lines };
+}
+
+function assembleClashProfile(blocks, groupName = '自动选择') {
+  const lines = [
+    'proxies:',
+    ...blocks.flatMap(b => b.lines),
+    'proxy-groups:',
+    `  - name: ${yamlQuote(groupName)}`,
+    '    type: select',
+    '    proxies:',
+    ...blocks.map(b => `      - ${yamlQuote(b.name)}`),
+    'rules:',
+    `  - MATCH,${groupName}`,
+  ];
+  return lines.join('\n');
+}
+
+// Generate a mihomo (Clash Meta) profile for a single inbound+client.
+// Kept backwards-compatible: tests call this directly with (inbound, client, cfg, displayName).
 function buildClashConfig(inbound, client, cfg = config, displayName) {
   try {
-    const f = parseVlessReality(inbound, client, cfg);
+    const f = parseVlessInbound(inbound, client, cfg);
     if (!f) return null;
+    const block = buildSingleProxyBlock(f, displayName);
+    if (!block) return null;
+    return assembleClashProfile([block]);
+  } catch {
+    return null;
+  }
+}
 
-    const nodeName = resolveNodeDisplayName(displayName, client.email);
-    const groupName = '自动选择';
-    const lines = [
-      'proxies:',
-      `  - name: ${yamlQuote(nodeName)}`,
-      '    type: vless',
-      `    server: ${yamlQuote(f.server)}`,
-      `    port: ${f.port}`,
-      `    uuid: ${yamlQuote(f.uuid)}`,
-      '    encryption: ""',
-      '    network: tcp',
-      '    udp: true',
-      '    packet-encoding: xudp',
-      '    tls: true',
-      ...(f.flow ? [`    flow: ${f.flow}`] : []),
-      `    servername: ${yamlQuote(f.sni)}`,
-      `    client-fingerprint: ${yamlQuote(f.fp)}`,
-      '    skip-cert-verify: true',
-      '    reality-opts:',
-      `      public-key: ${yamlQuote(f.pbk)}`,
-      `      short-id: ${yamlQuote(f.sid)}`,
-      '    smux:',
-      '      enabled: false',
-      'proxy-groups:',
-      `  - name: ${yamlQuote(groupName)}`,
-      '    type: select',
-      '    proxies:',
-      `      - ${yamlQuote(nodeName)}`,
-      'rules:',
-      `  - MATCH,${groupName}`,
-    ];
-    return lines.join('\n');
+// Generate a merged Clash profile containing all of the user's nodes (CF CDN + REALITY).
+// Output is a single YAML with multiple proxies; users switch between them in Clash.
+function buildMultiClashConfig(pairs, cfg = config, displayName) {
+  try {
+    if (!Array.isArray(pairs) || pairs.length === 0) return null;
+    // Suppress suffix when user has only one usable node (cleaner name)
+    const multi = pairs.length > 1;
+    const blocks = [];
+    for (const { inbound, client } of pairs) {
+      const f = parseVlessInbound(inbound, client, cfg);
+      if (!f) continue;
+      const block = buildSingleProxyBlock(f, displayName, { withSuffix: multi });
+      if (block) blocks.push(block);
+    }
+    if (blocks.length === 0) return null;
+    return assembleClashProfile(blocks);
   } catch {
     return null;
   }
@@ -449,4 +583,6 @@ module.exports = {
   resolveNodeDisplayName,
   getLiveCounters,
   buildClashConfig,
+  buildMultiClashConfig,
+  parseVlessInbound,
 };

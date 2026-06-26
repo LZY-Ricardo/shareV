@@ -566,6 +566,20 @@
 
       // VLESS panel
       html += '<div class="config-panel" id="vlessPanel"' + (hasClash ? ' style="display:none"' : '') + '>';
+
+      // Node picker — only when the user has multiple nodes (e.g. CF CDN + REALITY direct).
+      // shareV surfaces both inbounds so users can choose which to import.
+      const nodes = Array.isArray(data.nodes) ? data.nodes : (data.configLink ? [{ configLink: data.configLink, protocol: 'reality' }] : []);
+      if (nodes.length > 1) {
+        html += '<div class="config-tabs node-tabs">';
+        nodes.forEach((node, idx) => {
+          const active = idx === 0 ? ' active' : '';
+          const label = node.protocol === 'ws' ? 'CF CDN' : '直连';
+          html += `<button class="config-tab${active}" data-node-idx="${idx}" onclick="switchNode(${idx})">${label}</button>`;
+        });
+        html += '</div>';
+      }
+
       html += `<input type="text" class="config-link" id="configInput" value="${esc(data.configLink)}" readonly onclick="this.select()" />`;
       html += '<div class="config-actions">';
       html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
@@ -839,10 +853,29 @@
   window.switchConfigTab = function (tab) {
     const vlessPanel = document.getElementById('vlessPanel');
     const clashPanel = document.getElementById('clashPanel');
-    const tabs = document.querySelectorAll('.config-tab');
+    const tabs = document.querySelectorAll('.config-tabs:not(.node-tabs) .config-tab');
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     if (vlessPanel) vlessPanel.style.display = tab === 'vless' ? 'flex' : 'none';
     if (clashPanel) clashPanel.style.display = tab === 'clash' ? 'flex' : 'none';
+  };
+
+  // Switch between nodes (CF CDN vs direct REALITY) inside the VLESS panel.
+  // Updates the input value, the QR code, and the tab highlight.
+  window.switchNode = function (idx) {
+    if (!lastData || !Array.isArray(lastData.nodes)) return;
+    const node = lastData.nodes[idx];
+    if (!node || !node.configLink) return;
+
+    const tabBtns = document.querySelectorAll('.node-tabs .config-tab');
+    tabBtns.forEach((btn, i) => btn.classList.toggle('active', i === idx));
+
+    const input = document.getElementById('configInput');
+    if (input) input.value = node.configLink;
+
+    try {
+      const qr = document.getElementById('qrContainer');
+      if (qr) qr.innerHTML = generateQR(node.configLink);
+    } catch { /* QR generation failed, ignore */ }
   };
 
   window.toggleConfig = function () {

@@ -13,3 +13,8 @@ DEPLOYMENT.md
 CLEANUP.md
 CLAUDE.md
 .env
+
+# Local tooling indexes (codegraph, IDE)
+.codegraph/
+.idea/
+*.code-workspace
