@@ -583,7 +583,7 @@
       html += `<input type="text" class="config-link" id="configInput" value="${esc(data.configLink)}" readonly onclick="this.select()" />`;
       html += '<div class="config-actions">';
       html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
-      html += '<button class="config-import-btn" onclick="importToV2RayN()">复制并打开 v2rayN</button>';
+      html += `<button class="config-import-btn" onclick="importToV2RayN()">${nodes.length > 1 ? '复制全部并打开 v2rayN' : '复制并打开 v2rayN'}</button>`;
       html += '<button class="config-help-btn" onclick="openGuide()">查看导入教程</button>';
       html += '</div>';
       html += '<div class="qr-container" id="qrContainer"></div>';
@@ -916,12 +916,23 @@
     const input = document.getElementById('configInput');
     if (!input || !input.value) return;
 
-    const link = input.value;
     const btn = document.querySelector('.config-import-btn');
+
+    // When multiple nodes are available, copy all links (newline-separated)
+    // so v2rayN can batch-import them from clipboard in one paste.
+    const allNodes = (lastData && Array.isArray(lastData.nodes)) ? lastData.nodes : [];
+    const links = allNodes.length > 1
+      ? allNodes.map(n => n.configLink).filter(Boolean)
+      : [input.value];
+
+    if (links.length === 0) return;
+
+    const payload = links.join('\n');
+    const isBatch = links.length > 1;
 
     let copied = false;
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(payload);
       copied = true;
     } catch (_) {}
 
@@ -930,24 +941,26 @@
       btn.disabled = true;
     }
 
-    try {
-      // Best-effort deep link for desktop clients. If the protocol is not
-      // registered, users can still paste from clipboard in v2rayN.
-      const schemeUrl = `v2rayn://install-config?url=${encodeURIComponent(link)}`;
-      const launcher = document.createElement('a');
-      launcher.href = schemeUrl;
-      launcher.style.display = 'none';
-      document.body.appendChild(launcher);
-      launcher.click();
-      setTimeout(() => launcher.remove(), 1500);
-    } catch (_) {}
+    // v2rayn:// scheme only supports a single url. For batch import we rely
+    // on clipboard paste inside the client, so skip the launcher.
+    if (!isBatch) {
+      try {
+        const schemeUrl = `v2rayn://install-config?url=${encodeURIComponent(links[0])}`;
+        const launcher = document.createElement('a');
+        launcher.href = schemeUrl;
+        launcher.style.display = 'none';
+        document.body.appendChild(launcher);
+        launcher.click();
+        setTimeout(() => launcher.remove(), 1500);
+      } catch (_) {}
+    }
 
     toast(
-      copied
-        ? '已复制链接并尝试打开 v2rayN；回客户端按 Ctrl+V 即可导入'
-        : '已尝试打开 v2rayN；若没有弹起，请先注册协议',
+      isBatch
+        ? (copied ? `已复制 ${links.length} 个节点链接，去 v2rayN 按 Ctrl+V 一次性导入` : '复制失败，请切回单个节点 tab 分别导入')
+        : (copied ? '已复制链接并尝试打开 v2rayN；回客户端按 Ctrl+V 即可导入' : '已尝试打开 v2rayN；若没有弹起，请先注册协议'),
       copied ? 'info' : 'error',
-      3200
+      3500
     );
 
     setTimeout(() => {
