@@ -37,7 +37,7 @@ describe('auth routes', () => {
 
   it('uses text input for 3X-UI qq email on the login form', () => {
     assert.match(appSource, /type="text" id="emailInput"/);
-    assert.match(appSource, /QQ 邮箱（与 3X-UI 一致）/);
+    assert.match(appSource, /placeholder="QQ 邮箱"/);
     assert.doesNotMatch(appSource, /type="email" id="emailInput"/);
   });
 });

@@ -35,7 +35,7 @@ describe('access model', () => {
     assert.match(app, /\/api\/stats/);
     assert.match(app, /credentials:\s*'same-origin'/);
     assert.match(app, /type="text" id="emailInput"/);
-    assert.match(app, /QQ 邮箱（与 3X-UI 一致）/);
+    assert.match(app, /placeholder="QQ 邮箱"/);
     assert.doesNotMatch(app, /type="email" id="emailInput"/);
   });
 
