@@ -112,8 +112,29 @@ async function getUserStats(email, { displayName } = {}) {
   try {
     const inbounds = await xui.getInbounds();
     for (const inbound of inbounds) {
-      if (!inbound.clientStats) continue;
-      const client = inbound.clientStats.find(c => c.email === email);
+      // 1. Try live clientStats first — 3x-ui populates this for clients that
+      //    have generated traffic on this inbound.
+      let client = null;
+      if (Array.isArray(inbound.clientStats)) {
+        client = inbound.clientStats.find(c => c.email === email);
+      }
+      // 2. Fall back to settings.clients — a freshly created inbound (e.g. new
+      //    CF CDN route) has empty clientStats until the user actually connects
+      //    through it. Without this fallback the user can never see/import the
+      //    new node, since shareV wouldn't surface it at all.
+      if (!client) {
+        try {
+          const settings = JSON.parse(inbound.settings || '{}');
+          const clientCfg = (settings.clients || []).find(c => c.email === email);
+          if (clientCfg) {
+            client = {
+              email,
+              enable: clientCfg.enable !== false,
+              up: 0, down: 0, total: 0, expiryTime: 0, allTime: 0,
+            };
+          }
+        } catch {}
+      }
       if (client) liveMatches.push({ inbound, client });
     }
   } catch (err) {
@@ -133,8 +154,15 @@ async function getUserStats(email, { displayName } = {}) {
   });
 
   const primary = liveMatches[0] || null;
-  const liveClient = primary ? primary.client : null;
-  const liveInbound = primary ? primary.inbound : null;
+  // Pick the pair with the most recorded traffic for accurate totals / quota.
+  // A fresh CF CDN inbound has 0 clientStats, so primary (CF) would erase the
+  // user's accumulated REALITY traffic. Use the busiest pair for billing data.
+  const trafficPair = liveMatches.reduce(
+    (best, m) => ((m.client.allTime || 0) > (best?.client.allTime || 0) ? m : best),
+    null
+  ) || primary;
+  const liveClient = trafficPair ? trafficPair.client : null;
+  const liveInbound = trafficPair ? trafficPair.inbound : null;
 
   const latestSnapshot = db.getLatestSnapshot(email);
   let { up: totalUp, down: totalDown } = snapshotTrafficTotal(latestSnapshot);
@@ -161,30 +189,36 @@ async function getUserStats(email, { displayName } = {}) {
       totalDown = totalTraffic.down;
     }
 
-    // Per-node metadata so the frontend can render a node picker
-    nodes = liveMatches.map(({ inbound, client }) => {
-      let limitIp = 0;
-      try {
-        const settings = JSON.parse(inbound.settings || '{}');
-        const clientCfg = (settings.clients || []).find(c => c.email === email);
-        if (clientCfg) limitIp = clientCfg.limitIp || 0;
-      } catch {}
-      let stream = {};
-      try { stream = JSON.parse(inbound.streamSettings || '{}'); } catch {}
-      const isWs = stream.network === 'ws';
-      return {
-        id: inbound.id,
-        tag: inbound.tag || `inbound-${inbound.id}`,
-        remark: inbound.remark,
-        protocol: isWs ? 'ws' : 'reality',
-        port: inbound.port,
-        enable: client.enable,
-        totalGB: client.total ? (client.total / (1024 ** 3)).toFixed(1) : 0,
-        expiryTime: client.expiryTime,
-        limitIp,
-        configLink: buildConfigLink(inbound, client),
-      };
-    });
+    // Per-node metadata so the frontend can render a node picker.
+    // Filter out inbounds we can't turn into a vless:// link (e.g. non-vless
+    // protocols) — they'd show as empty entries in the picker.
+    nodes = liveMatches
+      .map(({ inbound, client }) => {
+        const link = buildConfigLink(inbound, client);
+        if (!link) return null;
+        let limitIp = 0;
+        try {
+          const settings = JSON.parse(inbound.settings || '{}');
+          const clientCfg = (settings.clients || []).find(c => c.email === email);
+          if (clientCfg) limitIp = clientCfg.limitIp || 0;
+        } catch {}
+        let stream = {};
+        try { stream = JSON.parse(inbound.streamSettings || '{}'); } catch {}
+        const isWs = stream.network === 'ws';
+        return {
+          id: inbound.id,
+          tag: inbound.tag || `inbound-${inbound.id}`,
+          remark: inbound.remark,
+          protocol: isWs ? 'ws' : 'reality',
+          port: inbound.port,
+          enable: client.enable,
+          totalGB: client.total ? (client.total / (1024 ** 3)).toFixed(1) : 0,
+          expiryTime: client.expiryTime,
+          limitIp,
+          configLink: link,
+        };
+      })
+      .filter(Boolean);
 
     // Backwards-compatible single-node fields use the primary (recommended) node
     let limitIp = 0;
@@ -204,8 +238,9 @@ async function getUserStats(email, { displayName } = {}) {
       limitIp,
     };
 
-    // Generate VLESS config link (primary node) + merged Clash YAML (all nodes)
-    configLink = buildConfigLink(liveInbound, liveClient);
+    // Generate VLESS config link (primary = recommended CF CDN node) + merged
+    // Clash YAML containing every node so users can switch in their client.
+    configLink = primary ? buildConfigLink(primary.inbound, primary.client) : null;
     clashConfig = buildMultiClashConfig(liveMatches, config, displayName);
   }
 
