@@ -55,6 +55,27 @@ describe('access model', () => {
     assert.doesNotMatch(app, /v2rayn:\/\/install-config/);
     assert.doesNotMatch(app, /v2rayn:[^'"]*install-config\?url/);
   });
+
+  it('offers immediate and subscription based v2rayN import actions with on-demand help', () => {
+    const app = readPublic('app.js');
+    const css = readPublic('style.css');
+
+    assert.match(app, /复制全部节点/);
+    assert.match(app, /copyAllV2raynNodes/);
+    assert.match(app, /复制订阅链接/);
+    assert.match(app, /data-tooltip=/);
+    assert.match(css, /\.config-help-tip/);
+    assert.doesNotMatch(app, /更新后两个节点都会出现/);
+  });
+
+  it('uses a compact selector instead of nested VLESS node tabs', () => {
+    const app = readPublic('app.js');
+    const css = readPublic('style.css');
+
+    assert.match(app, /id="nodeSelect"/);
+    assert.match(css, /\.config-node-select/);
+    assert.doesNotMatch(app, /node-tabs/);
+  });
 });
 
 describe('traffic chart responsiveness', () => {

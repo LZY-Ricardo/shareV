@@ -988,6 +988,41 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   gap: 8px;
 }
 
+.config-node-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.config-node-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.config-node-select {
+  min-width: 118px;
+  padding: 6px 30px 6px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(108, 92, 231, 0.08);
+  border: 1px solid rgba(108, 92, 231, 0.18);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+}
+
+.config-node-select:hover,
+.config-node-select:focus {
+  background: rgba(108, 92, 231, 0.12);
+  border-color: rgba(108, 92, 231, 0.32);
+  box-shadow: 0 2px 12px var(--primary-dim);
+}
+
 .config-actions {
   display: flex;
   justify-content: flex-end;
@@ -1107,6 +1142,96 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   box-shadow: 0 2px 12px var(--accent-dim);
 }
 
+.config-action-with-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.config-help-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  padding: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-light);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: help;
+  transition: all 0.2s;
+}
+
+.config-help-tip:hover,
+.config-help-tip:focus-visible {
+  color: var(--primary);
+  background: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 6px 18px var(--primary-light);
+  outline: none;
+}
+
+.config-help-tip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 12;
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 10px;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-dark);
+  text-align: left;
+  white-space: normal;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.config-help-tip::before {
+  content: '';
+  position: absolute;
+  right: 7px;
+  bottom: calc(100% + 4px);
+  z-index: 13;
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px) rotate(45deg);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.config-help-tip:hover::after,
+.config-help-tip:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.config-help-tip:hover::before,
+.config-help-tip:focus-visible::before {
+  opacity: 1;
+  transform: translateY(0) rotate(45deg);
+}
+
 .guide-code {
   width: 100%;
   min-height: 230px;
@@ -1185,11 +1310,18 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   border-radius: 8px;
 }
 
+.config-sub-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
 .config-sub-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-dark);
-  margin-bottom: 6px;
 }
 
 .config-sub-tag {
@@ -1218,13 +1350,6 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 .config-sub-row .config-copy-btn {
   flex-shrink: 0;
   white-space: nowrap;
-}
-
-.config-sub-hint {
-  margin-top: 6px;
-  font-size: 10px;
-  color: var(--text-dim);
-  line-height: 1.5;
 }
 
 /* ── Guide Page ── */
@@ -1735,6 +1860,13 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   .faq-grid { grid-template-columns: 1fr; }
   .step-card { grid-template-columns: 1fr; }
   .step-card .step-image { grid-column: 1; }
+  .config-actions { justify-content: stretch; }
+  .config-actions > button,
+  .config-action-with-help { flex: 1 1 auto; }
+  .config-action-with-help .config-import-btn { flex: 1 1 auto; }
+  .config-sub-row { flex-direction: column; }
+  .config-sub-row .config-copy-btn { width: 100%; }
+  .config-help-tip::after { max-width: min(240px, calc(100vw - 32px)); }
 }
 
 @media (max-width: 900px) {

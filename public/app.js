@@ -571,31 +571,38 @@
       // shareV surfaces both inbounds so users can choose which to import.
       const nodes = Array.isArray(data.nodes) ? data.nodes : (data.configLink ? [{ configLink: data.configLink, protocol: 'reality' }] : []);
       if (nodes.length > 1) {
-        html += '<div class="config-tabs node-tabs">';
+        html += '<div class="config-node-row">';
+        html += '<label class="config-node-label" for="nodeSelect">节点</label>';
+        html += '<select class="config-node-select" id="nodeSelect" onchange="switchNode(this.value)">';
         nodes.forEach((node, idx) => {
-          const active = idx === 0 ? ' active' : '';
           const label = node.protocol === 'ws' ? 'CF CDN' : '直连';
-          html += `<button class="config-tab${active}" data-node-idx="${idx}" onclick="switchNode(${idx})">${label}</button>`;
+          html += `<option value="${idx}">${label}</option>`;
         });
+        html += '</select>';
         html += '</div>';
       }
 
       html += `<input type="text" class="config-link" id="configInput" value="${esc(data.configLink)}" readonly onclick="this.select()" />`;
       html += '<div class="config-actions">';
-      html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
-      html += '<button class="config-import-btn" onclick="importToV2RayN()">复制 v2rayN 链接</button>';
+      html += '<button class="config-copy-btn" onclick="copyConfig()">复制当前节点</button>';
+      html += '<span class="config-action-with-help">';
+      html += '<button class="config-import-btn" onclick="copyAllV2raynNodes()">复制全部节点</button>';
+      html += '<button type="button" class="config-help-tip" data-tooltip="复制所有 VLESS 节点；回到 v2rayN 按 Ctrl+V 后立即出现。" aria-label="全部节点导入说明">?</button>';
+      html += '</span>';
       html += '<button class="config-help-btn" onclick="openGuide()">查看导入教程</button>';
       html += '</div>';
       // v2rayN-native subscription (base64 URL list).
       // v2rayN's generic subscription does not parse Clash YAML, so we expose a dedicated URL.
       if (data.v2raynConfigUrl) {
         html += `<div class="config-sub-box">
-          <div class="config-sub-label">v2rayN 订阅链接${nodes.length > 1 ? ' <span class="config-sub-tag">多节点</span>' : ''}</div>
+          <div class="config-sub-head">
+            <div class="config-sub-label">v2rayN 订阅${nodes.length > 1 ? ' <span class="config-sub-tag">多节点</span>' : ''}</div>
+            <button type="button" class="config-help-tip" data-tooltip="添加到订阅分组后，需在 v2rayN 点“更新当前订阅”。" aria-label="订阅导入说明">?</button>
+          </div>
           <div class="config-sub-row">
             <input type="text" class="config-link" id="v2raynConfigUrl" value="${esc(data.v2raynConfigUrl)}" readonly onclick="this.select()" />
-            <button class="config-copy-btn" onclick="copyV2raynConfig()">复制订阅</button>
+            <button class="config-copy-btn" onclick="copyV2raynConfig()">复制订阅链接</button>
           </div>
-          <div class="config-sub-hint">在 v2rayN「订阅设置 → 添加」粘贴此 URL，更新后两个节点都会出现</div>
         </div>`;
       }
       if (nodes.length > 1) {
@@ -868,21 +875,18 @@
   window.switchConfigTab = function (tab) {
     const vlessPanel = document.getElementById('vlessPanel');
     const clashPanel = document.getElementById('clashPanel');
-    const tabs = document.querySelectorAll('.config-tabs:not(.node-tabs) .config-tab');
+    const tabs = document.querySelectorAll('.config-tabs .config-tab');
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     if (vlessPanel) vlessPanel.style.display = tab === 'vless' ? 'flex' : 'none';
     if (clashPanel) clashPanel.style.display = tab === 'clash' ? 'flex' : 'none';
   };
 
   // Switch between nodes (CF CDN vs direct REALITY) inside the VLESS panel.
-  // Updates the input value, the QR code, and the tab highlight.
+  // Updates the input value and the QR code.
   window.switchNode = function (idx) {
     if (!lastData || !Array.isArray(lastData.nodes)) return;
     const node = lastData.nodes[idx];
     if (!node || !node.configLink) return;
-
-    const tabBtns = document.querySelectorAll('.node-tabs .config-tab');
-    tabBtns.forEach((btn, i) => btn.classList.toggle('active', i === idx));
 
     const input = document.getElementById('configInput');
     if (input) input.value = node.configLink;
@@ -910,8 +914,8 @@
     const input = document.getElementById('configInput');
     if (!input) return;
     navigator.clipboard.writeText(input.value).then(() => {
-      const btn = document.querySelector('.config-copy-btn');
-      if (btn) { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制链接', 1500); }
+      const btn = document.querySelector('#vlessPanel .config-actions .config-copy-btn');
+      if (btn) { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制当前节点', 1500); }
       toast('链接已复制，可以直接去客户端粘贴导入', 'success');
     }).catch(() => {
       toast('复制失败，请手动选中链接后复制', 'error');
@@ -933,44 +937,48 @@
     navigator.clipboard.writeText(input.value).then(() => {
       const btn = input.parentElement.querySelector('button');
       if (btn) { const t = btn.textContent; btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = t, 1500); }
-      toast('v2rayN 订阅链接已复制，去客户端「订阅设置」添加', 'success');
+      toast('订阅链接已复制，添加后请更新当前订阅', 'success');
     }).catch(() => {
       toast('复制失败，请手动选中链接后复制', 'error');
     });
   };
 
-  window.importToV2RayN = async function () {
+  window.copyAllV2raynNodes = async function () {
     const input = document.getElementById('configInput');
-    if (!input || !input.value) return;
+    const nodes = Array.isArray(lastData?.nodes) ? lastData.nodes : [];
+    const links = nodes
+      .map(node => node && node.configLink)
+      .filter(Boolean);
 
-    const link = input.value;
+    if (links.length === 0 && input?.value) {
+      links.push(input.value);
+    }
+    if (links.length === 0) return;
+
     const btn = document.querySelector('.config-import-btn');
-
     let copied = false;
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(links.join('\n'));
       copied = true;
     } catch (_) {}
 
     if (btn) {
-      btn.textContent = '正在复制...';
+      const original = btn.textContent;
+      btn.textContent = copied ? '已复制 ✓' : '复制失败';
       btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.disabled = false;
+      }, 1800);
     }
 
     toast(
       copied
-        ? '已复制 v2rayN 链接，回客户端按 Ctrl+V 导入'
+        ? '已复制全部节点，回到 v2rayN 按 Ctrl+V 导入'
         : '复制失败，请手动选中链接后复制',
       copied ? 'success' : 'error',
       2800
     );
-
-    setTimeout(() => {
-      if (btn) {
-        btn.textContent = '复制 v2rayN 链接';
-        btn.disabled = false;
-      }
-    }, 1800);
   };
 
   window.importToClashVerge = async function () {
