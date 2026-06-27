@@ -583,14 +583,14 @@
       html += `<input type="text" class="config-link" id="configInput" value="${esc(data.configLink)}" readonly onclick="this.select()" />`;
       html += '<div class="config-actions">';
       html += '<button class="config-copy-btn" onclick="copyConfig()">复制链接</button>';
-      html += '<button class="config-import-btn" onclick="importToV2RayN()">复制并打开 v2rayN</button>';
+      html += '<button class="config-import-btn" onclick="importToV2RayN()">复制 v2rayN 链接</button>';
       html += '<button class="config-help-btn" onclick="openGuide()">查看导入教程</button>';
       html += '</div>';
-      // v2rayN-native subscription (base64 URL list) — only show when multiple nodes exist.
+      // v2rayN-native subscription (base64 URL list).
       // v2rayN's generic subscription does not parse Clash YAML, so we expose a dedicated URL.
-      if (nodes.length > 1 && data.v2raynConfigUrl) {
+      if (data.v2raynConfigUrl) {
         html += `<div class="config-sub-box">
-          <div class="config-sub-label">v2rayN 订阅链接 <span class="config-sub-tag">多节点</span></div>
+          <div class="config-sub-label">v2rayN 订阅链接${nodes.length > 1 ? ' <span class="config-sub-tag">多节点</span>' : ''}</div>
           <div class="config-sub-row">
             <input type="text" class="config-link" id="v2raynConfigUrl" value="${esc(data.v2raynConfigUrl)}" readonly onclick="this.select()" />
             <button class="config-copy-btn" onclick="copyV2raynConfig()">复制订阅</button>
@@ -953,33 +953,21 @@
     } catch (_) {}
 
     if (btn) {
-      btn.textContent = '正在打开...';
+      btn.textContent = '正在复制...';
       btn.disabled = true;
     }
 
-    try {
-      // Best-effort deep link for desktop clients. If the protocol is not
-      // registered, users can still paste from clipboard in v2rayN.
-      const schemeUrl = `v2rayn://install-config?url=${encodeURIComponent(link)}`;
-      const launcher = document.createElement('a');
-      launcher.href = schemeUrl;
-      launcher.style.display = 'none';
-      document.body.appendChild(launcher);
-      launcher.click();
-      setTimeout(() => launcher.remove(), 1500);
-    } catch (_) {}
-
     toast(
       copied
-        ? '已复制链接并尝试打开 v2rayN；回客户端按 Ctrl+V 即可导入'
-        : '已尝试打开 v2rayN；若没有弹起，请先注册协议',
-      copied ? 'info' : 'error',
-      3200
+        ? '已复制 v2rayN 链接，回客户端按 Ctrl+V 导入'
+        : '复制失败，请手动选中链接后复制',
+      copied ? 'success' : 'error',
+      2800
     );
 
     setTimeout(() => {
       if (btn) {
-        btn.textContent = '复制并打开 v2rayN';
+        btn.textContent = '复制 v2rayN 链接';
         btn.disabled = false;
       }
     }, 1800);

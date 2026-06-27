@@ -46,6 +46,15 @@ describe('access model', () => {
     assert.match(app, /id="clashConfigUrl"/);
     assert.doesNotMatch(app, /id="clashConfigArea"/);
   });
+
+  it('uses a real v2rayN subscription URL instead of an unsupported deep link', () => {
+    const app = readPublic('app.js');
+
+    assert.match(app, /data\.v2raynConfigUrl/);
+    assert.match(app, /id="v2raynConfigUrl"/);
+    assert.doesNotMatch(app, /v2rayn:\/\/install-config/);
+    assert.doesNotMatch(app, /v2rayn:[^'"]*install-config\?url/);
+  });
 });
 
 describe('traffic chart responsiveness', () => {

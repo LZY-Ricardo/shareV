@@ -110,8 +110,8 @@
             <div class="step-no">03</div>
             <div class="step-copy">
               <h3>回到 shareV，复制当前连接链接</h3>
-              <p>回到你的 shareV 页面，点“复制链接”或“复制并打开 v2rayN”。</p>
-              <div class="step-tip">“复制并打开 v2rayN”只负责复制链接并打开软件，不代表一定会自动导入。真正稳定的导入动作，仍然是在 v2rayN 里按 <code>Ctrl+V</code>。</div>
+              <p>回到你的 shareV 页面，点“复制链接”或“复制 v2rayN 链接”。</p>
+              <div class="step-tip">如果页面里有 v2rayN 订阅链接，也可以复制后在 v2rayN 的订阅设置里添加。</div>
             </div>
           </article>
 
@@ -199,8 +199,8 @@
             <p>通常是浏览器没拿到剪贴板权限。你可以手动点击输入框，全选后复制。</p>
           </article>
           <article class="faq-card">
-            <h3>点了“复制并打开 v2rayN”只打开软件，没有自动导入</h3>
-            <p>这是正常情况。当前最稳的方式仍然是打开 v2rayN 后按 <code>Ctrl+V</code> 导入。</p>
+            <h3>复制后 v2rayN 没有自动导入</h3>
+            <p>当前最稳的方式是打开 v2rayN 后按 <code>Ctrl+V</code> 导入，或把 v2rayN 订阅链接添加到订阅设置。</p>
           </article>
           <article class="faq-card">
             <h3>扫码没反应</h3>
@@ -210,31 +210,6 @@
             <h3>节点导入成功但还是上不了网</h3>
             <p>先确认你已经真正启动连接，并打开了系统代理/VPN 开关。其次检查节点是否过期，或者回到 shareV 看是否显示在线。</p>
           </article>
-        </div>
-      </section>
-
-      <section class="guide-section guide-advanced">
-        <div class="guide-section-head">
-          <div class="guide-eyebrow">进阶</div>
-          <h2>如果你想点网页后直接打开 v2rayN</h2>
-          <p>这是进阶增强，不是必做项。没做也不影响你通过复制链接正常导入。</p>
-        </div>
-        <div class="advanced-box">
-          <p>把下面的命令复制到 Windows PowerShell 里执行。执行前先把第一行的 <code>v2rayN.exe</code> 路径改成你电脑上的真实路径。</p>
-          <textarea class="guide-code" readonly onclick="this.select()" id="guideCode">$exe = 'C:\Path\To\v2rayN\v2rayN.exe'
-
-New-Item -Path 'HKCU:\Software\Classes\v2rayn' -Force | Out-Null
-Set-ItemProperty -Path 'HKCU:\Software\Classes\v2rayn' -Name '(default)' -Value 'URL:v2rayN Protocol'
-New-ItemProperty -Path 'HKCU:\Software\Classes\v2rayn' -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null
-
-New-Item -Path 'HKCU:\Software\Classes\v2rayn\DefaultIcon' -Force | Out-Null
-Set-ItemProperty -Path 'HKCU:\Software\Classes\v2rayn\DefaultIcon' -Name '(default)' -Value "$exe,0"
-
-New-Item -Path 'HKCU:\Software\Classes\v2rayn\shell\open\command' -Force | Out-Null
-Set-ItemProperty -Path 'HKCU:\Software\Classes\v2rayn\shell\open\command' -Name '(default)' -Value "`"$exe`" `"%1`""</textarea>
-          <div class="guide-actions-row">
-            <button class="guide-copy-btn" onclick="copyGuideCode()">复制命令</button>
-          </div>
         </div>
       </section>
 
