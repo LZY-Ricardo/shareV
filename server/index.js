@@ -248,7 +248,7 @@ function getClashConfigUrl(req, token) {
 }
 
 function getV2raynConfigUrl(req, token) {
-  return `${getBaseUrl(req)}/sub/v2rayn?token=${encodeURIComponent(token)}`;
+  return `${getBaseUrl(req)}/sub/v2rayn?token=${encodeURIComponent(token)}&remarks=shareV%20ultra`;
 }
 
 // ── Auth routes ──
@@ -373,10 +373,9 @@ app.get('/sub/clash', rateLimiter, async (req, res) => {
   }
 });
 
-// v2rayN-native subscription: base64-encoded vless:// URL list (one per line).
-// v2rayN does not parse Clash YAML in its generic subscription flow; it expects
-// a base64 payload of vmess/vless URLs. This endpoint makes the multi-node
-// setup importable in v2rayN just like any normal subscription.
+// v2rayN-native subscription: plain vless:// URL list (one per line).
+// v2rayN 7.x accepts both plain and base64 share-link lists; plain text keeps
+// the downloaded payload debuggable and avoids client-side base64 edge cases.
 app.get('/sub/v2rayn', rateLimiter, async (req, res) => {
   const user = getUserByToken(req, res);
   if (!user) return;
@@ -390,8 +389,6 @@ app.get('/sub/v2rayn', rateLimiter, async (req, res) => {
     }
     if (links.length === 0) links.push(stats.configLink);
 
-    const payload = Buffer.from(links.join('\n') + '\n', 'utf-8').toString('base64');
-
     res.setHeader('content-type', 'text/plain; charset=utf-8');
     res.setHeader('cache-control', 'no-store');
     res.setHeader('profile-update-interval', '1');
@@ -404,7 +401,7 @@ app.get('/sub/v2rayn', rateLimiter, async (req, res) => {
       const expire = Math.floor(nextReset.getTime() / 1000);
       res.setHeader("subscription-userinfo", `upload=${upload}; download=${download}; total=${total}; expire=${expire}`);
     }
-    res.send(payload);
+    res.send(`${links.join('\n')}\n`);
   } catch (err) {
     console.error('[shareV] v2rayN subscription error:', err.message);
     res.status(500).json({ error: '服务暂时不可用' });

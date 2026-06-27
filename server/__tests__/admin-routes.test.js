@@ -33,4 +33,10 @@ describe('admin routes', () => {
     assert.match(indexSource, /app\.get\('\/sub\/clash'/);
     assert.match(indexSource, /content-type',\s*'text\/yaml/);
   });
+
+  it('serves v2rayN subscriptions as plain share links with a stable group name', () => {
+    assert.match(indexSource, /\/sub\/v2rayn\?token=\$\{encodeURIComponent\(token\)\}&remarks=shareV%20ultra/);
+    assert.match(indexSource, /res\.send\(\`\$\{links\.join\('\\n'\)\}\\n\`\)/);
+    assert.doesNotMatch(indexSource, /Buffer\.from\(links\.join\('\\n'\)/);
+  });
 });
