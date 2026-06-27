@@ -39,4 +39,17 @@ describe('admin routes', () => {
     assert.match(indexSource, /res\.send\(\`\$\{links\.join\('\\n'\)\}\\n\`\)/);
     assert.doesNotMatch(indexSource, /Buffer\.from\(links\.join\('\\n'\)/);
   });
+
+  it('exposes backup subscription URLs from configured backup public URLs', () => {
+    assert.match(indexSource, /resolveBackupPublicUrls\(config\)/);
+    assert.match(indexSource, /backupClashConfigUrls/);
+    assert.match(indexSource, /backupV2raynConfigUrls/);
+  });
+
+  it('does not describe direct REALITY as a subscription fallback anymore', () => {
+    const emailSource = fs.readFileSync(path.join(__dirname, '..', 'email.js'), 'utf8');
+
+    assert.match(emailSource, /订阅移除直连节点/);
+    assert.doesNotMatch(emailSource, /Clash 订阅已合并双节点/);
+  });
 });

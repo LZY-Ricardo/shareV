@@ -176,6 +176,47 @@ describe('traffic tracker stats', () => {
     assert.doesNotMatch(profile, /3239468786@qq.com/);
   });
 
+  it('filters direct REALITY nodes out of subscription exports', () => {
+    const tracker = loadTracker({ inbounds: [] });
+    const client = { email: 'Hua' };
+    const wsInbound = {
+      id: 1,
+      protocol: 'vless',
+      port: 443,
+      settings: JSON.stringify({
+        clients: [{ email: 'Hua', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+      }),
+      streamSettings: JSON.stringify({
+        network: 'ws',
+        tlsSettings: { serverName: 'cdn.sunandyu.top' },
+        wsSettings: { path: '/vless', host: 'cdn.sunandyu.top' },
+      }),
+    };
+    const realityInbound = {
+      id: 2,
+      protocol: 'vless',
+      port: 443,
+      settings: JSON.stringify({
+        clients: [{ email: 'Hua', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+      }),
+      streamSettings: JSON.stringify({
+        realitySettings: {
+          serverNames: ['www.microsoft.com'],
+          shortIds: ['abcd'],
+          settings: { publicKey: 'pub-key', fingerprint: 'chrome' },
+        },
+      }),
+    };
+
+    const filtered = tracker.filterSubscriptionPairs([
+      { inbound: wsInbound, client },
+      { inbound: realityInbound, client },
+    ], { server: 'v.sunandyu.top' });
+
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0].inbound.id, 1);
+  });
+
   it('ranks users by day, month, and total traffic', async () => {
     const tracker = loadTracker({
       inbounds: [{

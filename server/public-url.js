@@ -5,4 +5,15 @@ function resolvePublicUrl(config, req) {
   return `${req.protocol}://${req.get('host')}`;
 }
 
-module.exports = { resolvePublicUrl };
+function normalizePublicUrl(url) {
+  return String(url || '').trim().replace(/\/+$/, '');
+}
+
+function resolveBackupPublicUrls(config) {
+  const primary = normalizePublicUrl(config.publicUrl);
+  const urls = Array.isArray(config.backupPublicUrls) ? config.backupPublicUrls : [];
+  return [...new Set(urls.map(normalizePublicUrl).filter(Boolean))]
+    .filter(url => url !== primary);
+}
+
+module.exports = { resolvePublicUrl, resolveBackupPublicUrls };

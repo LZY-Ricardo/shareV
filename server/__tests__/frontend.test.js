@@ -76,6 +76,14 @@ describe('access model', () => {
     assert.match(css, /\.config-node-select/);
     assert.doesNotMatch(app, /node-tabs/);
   });
+
+  it('renders backup subscription URLs without crowding the primary action', () => {
+    const app = readPublic('app.js');
+
+    assert.match(app, /backupV2raynConfigUrls/);
+    assert.match(app, /备用订阅链接/);
+    assert.match(app, /copyBackupConfig/);
+  });
 });
 
 describe('traffic chart responsiveness', () => {

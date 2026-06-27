@@ -192,7 +192,9 @@ async function getUserStats(email, { displayName } = {}) {
     // Per-node metadata so the frontend can render a node picker.
     // Filter out inbounds we can't turn into a vless:// link (e.g. non-vless
     // protocols) — they'd show as empty entries in the picker.
-    nodes = liveMatches
+    const subscriptionPairs = filterSubscriptionPairs(liveMatches, config);
+
+    nodes = subscriptionPairs
       .map(({ inbound, client }) => {
         const link = buildConfigLink(inbound, client);
         if (!link) return null;
@@ -238,10 +240,11 @@ async function getUserStats(email, { displayName } = {}) {
       limitIp,
     };
 
-    // Generate VLESS config link (primary = recommended CF CDN node) + merged
-    // Clash YAML containing every node so users can switch in their client.
-    configLink = primary ? buildConfigLink(primary.inbound, primary.client) : null;
-    clashConfig = buildMultiClashConfig(liveMatches, config, displayName);
+    // Generate user-facing subscription links from CDN-safe nodes only.
+    // Direct REALITY nodes may expose the origin IP, so they stay out of exports.
+    const subscriptionPrimary = subscriptionPairs[0] || null;
+    configLink = subscriptionPrimary ? buildConfigLink(subscriptionPrimary.inbound, subscriptionPrimary.client) : null;
+    clashConfig = buildMultiClashConfig(subscriptionPairs, config, displayName);
   }
 
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
@@ -379,6 +382,14 @@ function buildConfigLink(inbound, client, cfg = config) {
   }
 }
 
+function filterSubscriptionPairs(pairs, cfg = config) {
+  if (!Array.isArray(pairs)) return [];
+  return pairs.filter(({ inbound, client }) => {
+    const parsed = parseVlessInbound(inbound, client, cfg);
+    return parsed?.kind === 'ws';
+  });
+}
+
 function yamlQuote(value) {
   return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
@@ -461,11 +472,13 @@ function buildClashConfig(inbound, client, cfg = config, displayName) {
   }
 }
 
-// Generate a merged Clash profile containing all of the user's nodes (CF CDN + REALITY).
+// Generate a merged Clash profile containing the user's subscription-safe nodes.
 // Output is a single YAML with multiple proxies; users switch between them in Clash.
 function buildMultiClashConfig(pairs, cfg = config, displayName) {
   try {
     if (!Array.isArray(pairs) || pairs.length === 0) return null;
+    pairs = filterSubscriptionPairs(pairs, cfg);
+    if (pairs.length === 0) return null;
     // Suppress suffix when user has only one usable node (cleaner name)
     const multi = pairs.length > 1;
     const blocks = [];
@@ -619,5 +632,6 @@ module.exports = {
   getLiveCounters,
   buildClashConfig,
   buildMultiClashConfig,
+  filterSubscriptionPairs,
   parseVlessInbound,
 };

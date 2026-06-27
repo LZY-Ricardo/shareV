@@ -6,6 +6,9 @@
   },
   "server": "your-domain.com",
   "publicUrl": "https://your-domain.com:2053",
+  "backupPublicUrls": [
+    "https://sub2.your-domain.com"
+  ],
   "port": 3000,
   "email": {
     "enabled": true,

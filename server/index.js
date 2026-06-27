@@ -7,7 +7,7 @@ const xui = require('./xui-api');
 const tracker = require('./traffic-tracker');
 const db = require('./db');
 const { createUserDirectory } = require('./user-directory');
-const { resolvePublicUrl } = require('./public-url');
+const { resolvePublicUrl, resolveBackupPublicUrls } = require('./public-url');
 const { getClashProfileFilename } = require('./clash-profile-name');
 const emailService = require('./email');
 const { createAuth, auditUserPasswords } = require('./auth');
@@ -251,6 +251,16 @@ function getV2raynConfigUrl(req, token) {
   return `${getBaseUrl(req)}/sub/v2rayn?token=${encodeURIComponent(token)}&remarks=shareV%20ultra`;
 }
 
+function getBackupClashConfigUrls(token) {
+  return resolveBackupPublicUrls(config)
+    .map(url => `${url}/sub/clash?token=${encodeURIComponent(token)}`);
+}
+
+function getBackupV2raynConfigUrls(token) {
+  return resolveBackupPublicUrls(config)
+    .map(url => `${url}/sub/v2rayn?token=${encodeURIComponent(token)}&remarks=shareV%20ultra`);
+}
+
 // ── Auth routes ──
 app.post('/api/auth/login', authRateLimiter, async (req, res) => {
   const account = (req.body?.email || req.body?.username || req.body?.account || '').trim();
@@ -330,6 +340,8 @@ app.get('/api/stats', rateLimiter, async (req, res) => {
       name: user.name,
       clashConfigUrl: stats.clashConfig ? getClashConfigUrl(req, user.token) : null,
       v2raynConfigUrl: (Array.isArray(stats.nodes) && stats.nodes.length > 0) ? getV2raynConfigUrl(req, user.token) : null,
+      backupClashConfigUrls: stats.clashConfig ? getBackupClashConfigUrls(user.token) : [],
+      backupV2raynConfigUrls: (Array.isArray(stats.nodes) && stats.nodes.length > 0) ? getBackupV2raynConfigUrls(user.token) : [],
       ...stats,
     });
   } catch (err) {

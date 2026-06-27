@@ -347,7 +347,7 @@ function buildCfCdnAnnouncementHtml(user, publicUrl) {
     <span style="color:${PRIMARY};font-weight:700;">2.</span>
   </td>
   <td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">
-    <strong style="color:${TEXT_DARK};">保留 REALITY 直连</strong>：作为备用，速度更快但偶尔会被封 IP。
+    <strong style="color:${TEXT_DARK};">订阅移除直连节点</strong>：REALITY 直连 IP 已不可用，新订阅只下发 CDN 节点。
   </td>
 </tr>
 <tr>
@@ -355,7 +355,7 @@ function buildCfCdnAnnouncementHtml(user, publicUrl) {
     <span style="color:${PRIMARY};font-weight:700;">3.</span>
   </td>
   <td style="padding:8px 0;font-family:-apple-system,sans-serif;font-size:13px;color:${TEXT};line-height:1.6;">
-    <strong style="color:${TEXT_DARK};">Clash 订阅已合并双节点</strong>：客户端会自动选最快的，无需手动切换。
+    <strong style="color:${TEXT_DARK};">新增备用订阅入口</strong>：主域名异常时，可使用备用订阅域名继续更新配置。
   </td>
 </tr>
 </table>`);
@@ -385,7 +385,7 @@ function buildCfCdnAnnouncementHtml(user, publicUrl) {
   <td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;color:${PRIMARY};width:100%;">Q：旧节点还能用吗？</td>
 </tr>
 <tr>
-  <td style="padding:0 0 10px 0;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};line-height:1.5;">能用，但建议尽快切换。REALITY 直连 IP 已被墙，CF CDN 是更稳定的选择。</td>
+  <td style="padding:0 0 10px 0;font-family:-apple-system,sans-serif;font-size:12px;color:${TEXT_LIGHT};line-height:1.5;">不建议继续使用。REALITY 直连 IP 已被墙，新订阅默认不再下发直连节点。</td>
 </tr>
 <tr>
   <td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;color:${PRIMARY};">Q：速度会变慢吗？</td>

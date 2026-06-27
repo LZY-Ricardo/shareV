@@ -558,6 +558,16 @@
         html += '<button class="config-clash-import-btn" onclick="importToClashVerge()">导入 Clash Verge</button>';
         html += '<button class="config-help-btn" onclick="openClashGuide()">查看导入教程</button>';
         html += '</div>';
+        if (Array.isArray(data.backupClashConfigUrls) && data.backupClashConfigUrls.length) {
+          html += `<div class="config-backup-list config-clash-backups">
+            ${data.backupClashConfigUrls.map((url, idx) => `
+              <div class="config-sub-row config-backup-row">
+                <input type="text" class="config-link" id="backupClashConfigUrl${idx}" value="${esc(url)}" readonly onclick="this.select()" />
+                <button class="config-copy-btn" onclick="copyBackupConfig('backupClashConfigUrl', ${idx})">备用订阅链接</button>
+              </div>
+            `).join('')}
+          </div>`;
+        }
         html += '<div class="config-tip">请确保 Clash Verge 已打开，再点击"导入"。若应用未运行，首次点击仅会启动应用，需再次点击才能完成导入。</div>';
         html += '<div class="qr-container" id="qrContainerClash"></div>';
         html += '<div class="config-hint">也可扫描二维码导入 · <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases" target="_blank" rel="noopener" class="config-dl">下载 Clash Verge</a></div>';
@@ -567,15 +577,14 @@
       // VLESS panel
       html += '<div class="config-panel" id="vlessPanel"' + (hasClash ? ' style="display:none"' : '') + '>';
 
-      // Node picker — only when the user has multiple nodes (e.g. CF CDN + REALITY direct).
-      // shareV surfaces both inbounds so users can choose which to import.
+      // Node picker — only when there are multiple subscription-safe CDN nodes.
       const nodes = Array.isArray(data.nodes) ? data.nodes : (data.configLink ? [{ configLink: data.configLink, protocol: 'reality' }] : []);
       if (nodes.length > 1) {
         html += '<div class="config-node-row">';
         html += '<label class="config-node-label" for="nodeSelect">节点</label>';
         html += '<select class="config-node-select" id="nodeSelect" onchange="switchNode(this.value)">';
         nodes.forEach((node, idx) => {
-          const label = node.protocol === 'ws' ? 'CF CDN' : '直连';
+          const label = node.remark || (node.protocol === 'ws' ? 'CDN 节点' : '备用节点');
           html += `<option value="${idx}">${label}</option>`;
         });
         html += '</select>';
@@ -603,6 +612,15 @@
             <input type="text" class="config-link" id="v2raynConfigUrl" value="${esc(data.v2raynConfigUrl)}" readonly onclick="this.select()" />
             <button class="config-copy-btn" onclick="copyV2raynConfig()">复制订阅链接</button>
           </div>
+          ${Array.isArray(data.backupV2raynConfigUrls) && data.backupV2raynConfigUrls.length ? `
+          <div class="config-backup-list">
+            ${data.backupV2raynConfigUrls.map((url, idx) => `
+              <div class="config-sub-row config-backup-row">
+                <input type="text" class="config-link" id="backupV2raynConfigUrl${idx}" value="${esc(url)}" readonly onclick="this.select()" />
+                <button class="config-copy-btn" onclick="copyBackupConfig('backupV2raynConfigUrl', ${idx})">备用订阅链接</button>
+              </div>
+            `).join('')}
+          </div>` : ''}
         </div>`;
       }
       if (nodes.length > 1) {
@@ -938,6 +956,18 @@
       const btn = input.parentElement.querySelector('button');
       if (btn) { const t = btn.textContent; btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = t, 1500); }
       toast('订阅链接已复制，添加后请更新当前订阅', 'success');
+    }).catch(() => {
+      toast('复制失败，请手动选中链接后复制', 'error');
+    });
+  };
+
+  window.copyBackupConfig = function (prefix, idx) {
+    const input = document.getElementById(`${prefix}${idx}`);
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = input.parentElement.querySelector('button');
+      if (btn) { const t = btn.textContent; btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = t, 1500); }
+      toast('备用订阅链接已复制', 'success');
     }).catch(() => {
       toast('复制失败，请手动选中链接后复制', 'error');
     });

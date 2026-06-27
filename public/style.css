@@ -1352,6 +1352,30 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   white-space: nowrap;
 }
 
+.config-backup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.config-backup-row .config-link {
+  color: var(--text-light);
+}
+
+.config-backup-row .config-copy-btn {
+  color: var(--text-light);
+  background: rgba(255, 255, 255, 0.45);
+  border-color: var(--border);
+}
+
+.config-backup-row .config-copy-btn:hover {
+  color: var(--primary);
+  background: rgba(108, 92, 231, 0.08);
+}
+
 /* ── Guide Page ── */
 .guide-container {
   max-width: 1080px;
