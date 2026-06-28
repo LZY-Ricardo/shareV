@@ -102,6 +102,39 @@ function resolveNodeDisplayName(displayName, email) {
   return String(email || '').trim();
 }
 
+function normalizeNodeServer(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    return new URL(raw).hostname;
+  } catch {}
+  return raw.replace(/^https?:\/\//, '').split('/')[0].split(':')[0].trim();
+}
+
+function resolveCdnNodeServers(cfg = config) {
+  const servers = [];
+  const add = (value) => {
+    const server = normalizeNodeServer(value);
+    if (server && !servers.includes(server)) servers.push(server);
+  };
+  add(cfg?.server);
+  for (const server of cfg?.cdnNodeServers || []) add(server);
+  return servers;
+}
+
+function expandCdnNodeFields(f, cfg = config) {
+  if (!f || f.kind !== 'ws') return f ? [f] : [];
+  const servers = resolveCdnNodeServers(cfg);
+  if (servers.length <= 1) return [f];
+  return servers.map((server, index) => ({
+    ...f,
+    server,
+    sni: server,
+    wsHost: server,
+    nodeLabel: index === 0 ? '主' : `备用${index}`,
+  }));
+}
+
 async function getUserStats(email, { displayName } = {}) {
   const now = Math.floor(Date.now() / 1000);
 
@@ -195,9 +228,8 @@ async function getUserStats(email, { displayName } = {}) {
     const subscriptionPairs = filterSubscriptionPairs(liveMatches, config);
 
     nodes = subscriptionPairs
-      .map(({ inbound, client }) => {
-        const link = buildConfigLink(inbound, client);
-        if (!link) return null;
+      .flatMap(({ inbound, client }) => {
+        const fieldsList = expandCdnNodeFields(parseVlessInbound(inbound, client, config), config);
         let limitIp = 0;
         try {
           const settings = JSON.parse(inbound.settings || '{}');
@@ -207,18 +239,23 @@ async function getUserStats(email, { displayName } = {}) {
         let stream = {};
         try { stream = JSON.parse(inbound.streamSettings || '{}'); } catch {}
         const isWs = stream.network === 'ws';
-        return {
+        return fieldsList.map((fields) => ({
           id: inbound.id,
           tag: inbound.tag || `inbound-${inbound.id}`,
           remark: inbound.remark,
+          name: fields.nodeLabel ? `${resolveNodeDisplayName(displayName, fields.email)} (${fields.nodeLabel})` : resolveNodeDisplayName(displayName, fields.email),
           protocol: isWs ? 'ws' : 'reality',
           port: inbound.port,
+          server: fields.server,
           enable: client.enable,
           totalGB: client.total ? (client.total / (1024 ** 3)).toFixed(1) : 0,
           expiryTime: client.expiryTime,
           limitIp,
-          configLink: link,
-        };
+          configLink: buildConfigLinkFromFields({
+            ...fields,
+            nodeName: fields.nodeLabel ? `${resolveNodeDisplayName(displayName, fields.email)} (${fields.nodeLabel})` : resolveNodeDisplayName(displayName, fields.email),
+          }),
+        }));
       })
       .filter(Boolean);
 
@@ -348,38 +385,41 @@ const parseVlessReality = parseVlessInbound;
 function buildConfigLink(inbound, client, cfg = config) {
   try {
     const f = parseVlessInbound(inbound, client, cfg);
-    if (!f) return null;
-
-    let params;
-    if (f.kind === 'ws') {
-      // VLESS+WS+TLS via CF CDN — proxy through Cloudflare
-      params = [
-        'encryption=none',
-        'security=tls',
-        `sni=${encodeURIComponent(f.sni)}`,
-        `fp=${encodeURIComponent(f.fp)}`,
-        'type=ws',
-        `host=${encodeURIComponent(f.wsHost)}`,
-        `path=${encodeURIComponent(f.wsPath)}`,
-      ].join('&');
-    } else {
-      // REALITY direct connection
-      params = [
-        'encryption=none',
-        'security=reality',
-        `sni=${encodeURIComponent(f.sni)}`,
-        `fp=${encodeURIComponent(f.fp)}`,
-        `pbk=${encodeURIComponent(f.pbk)}`,
-        `sid=${encodeURIComponent(f.sid)}`,
-        ...(f.flow ? [`flow=${encodeURIComponent(f.flow)}`] : []),
-        'type=tcp',
-      ].join('&');
-    }
-
-    return `vless://${f.uuid}@${f.server}:${f.port}?${params}#${encodeURIComponent(f.email)}`;
+    return buildConfigLinkFromFields(f);
   } catch {
     return null;
   }
+}
+
+function buildConfigLinkFromFields(f) {
+  if (!f) return null;
+  const remark = f.nodeName || f.email;
+
+  let params;
+  if (f.kind === 'ws') {
+    params = [
+      'encryption=none',
+      'security=tls',
+      `sni=${encodeURIComponent(f.sni)}`,
+      `fp=${encodeURIComponent(f.fp)}`,
+      'type=ws',
+      `host=${encodeURIComponent(f.wsHost)}`,
+      `path=${encodeURIComponent(f.wsPath)}`,
+    ].join('&');
+  } else {
+    params = [
+      'encryption=none',
+      'security=reality',
+      `sni=${encodeURIComponent(f.sni)}`,
+      `fp=${encodeURIComponent(f.fp)}`,
+      `pbk=${encodeURIComponent(f.pbk)}`,
+      `sid=${encodeURIComponent(f.sid)}`,
+      ...(f.flow ? [`flow=${encodeURIComponent(f.flow)}`] : []),
+      'type=tcp',
+    ].join('&');
+  }
+
+  return `vless://${f.uuid}@${f.server}:${f.port}?${params}#${encodeURIComponent(remark)}`;
 }
 
 function filterSubscriptionPairs(pairs, cfg = config) {
@@ -400,8 +440,9 @@ function buildSingleProxyBlock(f, displayName, { withSuffix = false } = {}) {
   if (!f) return null;
   const baseName = resolveNodeDisplayName(displayName, f.email);
   const nodeName = withSuffix
-    ? baseName + (f.kind === 'ws' ? ' (CF)' : ' (直连)')
+    ? baseName + (f.nodeLabel ? ` (${f.nodeLabel})` : (f.kind === 'ws' ? ' (CF)' : ' (直连)'))
     : baseName;
+  f.nodeName = nodeName;
 
   const lines = [
     `  - name: ${yamlQuote(nodeName)}`,
@@ -479,12 +520,12 @@ function buildMultiClashConfig(pairs, cfg = config, displayName) {
     if (!Array.isArray(pairs) || pairs.length === 0) return null;
     pairs = filterSubscriptionPairs(pairs, cfg);
     if (pairs.length === 0) return null;
+    const fieldsList = pairs
+      .flatMap(({ inbound, client }) => expandCdnNodeFields(parseVlessInbound(inbound, client, cfg), cfg));
     // Suppress suffix when user has only one usable node (cleaner name)
-    const multi = pairs.length > 1;
+    const multi = fieldsList.length > 1;
     const blocks = [];
-    for (const { inbound, client } of pairs) {
-      const f = parseVlessInbound(inbound, client, cfg);
-      if (!f) continue;
+    for (const f of fieldsList) {
       const block = buildSingleProxyBlock(f, displayName, { withSuffix: multi });
       if (block) blocks.push(block);
     }

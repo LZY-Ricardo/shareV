@@ -217,6 +217,49 @@ describe('traffic tracker stats', () => {
     assert.equal(filtered[0].inbound.id, 1);
   });
 
+  it('expands one CF inbound across configured CDN node domains', () => {
+    const tracker = loadTracker({ inbounds: [] });
+    const client = { email: 'Hua' };
+    const inbound = {
+      id: 1,
+      protocol: 'vless',
+      port: 2083,
+      settings: JSON.stringify({
+        clients: [{ email: 'Hua', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+      }),
+      streamSettings: JSON.stringify({
+        network: 'ws',
+        tlsSettings: { serverName: 'v.sunandyu.top' },
+        wsSettings: { path: '/vlws', host: 'v.sunandyu.top' },
+      }),
+    };
+
+    const profile = tracker.buildMultiClashConfig(
+      [{ inbound, client }],
+      {
+        server: 'v.sunandyu.top',
+        cdnNodeServers: [
+          'sub2.sunandyu.top',
+          'https://sub.ricardo777.dpdns.org:2053',
+        ],
+      },
+      'Hua'
+    );
+
+    assert.match(profile, /- name: "Hua \(主\)"/);
+    assert.match(profile, /server: "v\.sunandyu\.top"/);
+    assert.match(profile, /servername: "v\.sunandyu\.top"/);
+    assert.match(profile, /Host: "v\.sunandyu\.top"/);
+    assert.match(profile, /- name: "Hua \(备用1\)"/);
+    assert.match(profile, /server: "sub2\.sunandyu\.top"/);
+    assert.match(profile, /servername: "sub2\.sunandyu\.top"/);
+    assert.match(profile, /Host: "sub2\.sunandyu\.top"/);
+    assert.match(profile, /- name: "Hua \(备用2\)"/);
+    assert.match(profile, /server: "sub\.ricardo777\.dpdns\.org"/);
+    assert.match(profile, /servername: "sub\.ricardo777\.dpdns\.org"/);
+    assert.match(profile, /Host: "sub\.ricardo777\.dpdns\.org"/);
+  });
+
   it('ranks users by day, month, and total traffic', async () => {
     const tracker = loadTracker({
       inbounds: [{
