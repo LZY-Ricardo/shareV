@@ -1003,7 +1003,8 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 }
 
 .config-node-select {
-  min-width: 118px;
+  width: min(100%, 300px);
+  min-width: 220px;
   padding: 6px 30px 6px 10px;
   font-family: var(--mono);
   font-size: 11px;
@@ -1350,6 +1351,55 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 .config-sub-row .config-copy-btn {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+.config-backup-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.config-backup-chip {
+  min-width: 150px;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.config-backup-chip span {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.config-backup-chip small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.config-backup-chip:hover {
+  color: var(--primary);
+  background: rgba(108, 92, 231, 0.08);
+  border-color: rgba(108, 92, 231, 0.18);
+  transform: translateY(-1px);
 }
 
 .config-backup-list {
@@ -1890,6 +1940,9 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   .config-action-with-help .config-import-btn { flex: 1 1 auto; }
   .config-sub-row { flex-direction: column; }
   .config-sub-row .config-copy-btn { width: 100%; }
+  .config-node-row { align-items: stretch; }
+  .config-node-select { width: 100%; min-width: 0; }
+  .config-backup-chip { flex-basis: 100%; }
   .config-help-tip::after { max-width: min(240px, calc(100vw - 32px)); }
 }
 

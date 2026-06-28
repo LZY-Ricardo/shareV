@@ -559,12 +559,12 @@
         html += '<button class="config-help-btn" onclick="openClashGuide()">查看导入教程</button>';
         html += '</div>';
         if (Array.isArray(data.backupClashConfigUrls) && data.backupClashConfigUrls.length) {
-          html += `<div class="config-backup-list config-clash-backups">
+          html += `<div class="config-backup-strip config-clash-backups">
             ${data.backupClashConfigUrls.map((url, idx) => `
-              <div class="config-sub-row config-backup-row">
-                <input type="text" class="config-link" id="backupClashConfigUrl${idx}" value="${esc(url)}" readonly onclick="this.select()" />
-                <button class="config-copy-btn" onclick="copyBackupConfig('backupClashConfigUrl', ${idx})">备用订阅链接</button>
-              </div>
+              <button class="config-backup-chip" id="backupClashConfigUrl${idx}" data-url="${escAttr(url)}" onclick="copyBackupConfig('backupClashConfigUrl', ${idx})">
+                <span>${esc(backupLabel(url, idx))}</span>
+                <small>${esc(hostLabel(url))}</small>
+              </button>
             `).join('')}
           </div>`;
         }
@@ -584,7 +584,7 @@
         html += '<label class="config-node-label" for="nodeSelect">节点</label>';
         html += '<select class="config-node-select" id="nodeSelect" onchange="switchNode(this.value)">';
         nodes.forEach((node, idx) => {
-          const label = node.remark || (node.protocol === 'ws' ? 'CDN 节点' : '备用节点');
+          const label = nodeLabel(node, idx);
           html += `<option value="${idx}">${label}</option>`;
         });
         html += '</select>';
@@ -613,12 +613,12 @@
             <button class="config-copy-btn" onclick="copyV2raynConfig()">复制订阅链接</button>
           </div>
           ${Array.isArray(data.backupV2raynConfigUrls) && data.backupV2raynConfigUrls.length ? `
-          <div class="config-backup-list">
+          <div class="config-backup-strip">
             ${data.backupV2raynConfigUrls.map((url, idx) => `
-              <div class="config-sub-row config-backup-row">
-                <input type="text" class="config-link" id="backupV2raynConfigUrl${idx}" value="${esc(url)}" readonly onclick="this.select()" />
-                <button class="config-copy-btn" onclick="copyBackupConfig('backupV2raynConfigUrl', ${idx})">备用订阅链接</button>
-              </div>
+              <button class="config-backup-chip" id="backupV2raynConfigUrl${idx}" data-url="${escAttr(url)}" onclick="copyBackupConfig('backupV2raynConfigUrl', ${idx})">
+                <span>${esc(backupLabel(url, idx))}</span>
+                <small>${esc(hostLabel(url))}</small>
+              </button>
             `).join('')}
           </div>` : ''}
         </div>`;
@@ -962,11 +962,17 @@
   };
 
   window.copyBackupConfig = function (prefix, idx) {
-    const input = document.getElementById(`${prefix}${idx}`);
-    if (!input) return;
-    navigator.clipboard.writeText(input.value).then(() => {
-      const btn = input.parentElement.querySelector('button');
-      if (btn) { const t = btn.textContent; btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = t, 1500); }
+    const el = document.getElementById(`${prefix}${idx}`);
+    if (!el) return;
+    const value = el.dataset?.url || el.value;
+    if (!value) return;
+    navigator.clipboard.writeText(value).then(() => {
+      const btn = el.tagName === 'BUTTON' ? el : el.parentElement.querySelector('button');
+      if (btn) {
+        const original = btn.innerHTML;
+        btn.innerHTML = '<span>已复制</span><small>Copied</small>';
+        setTimeout(() => btn.innerHTML = original, 1500);
+      }
       toast('备用订阅链接已复制', 'success');
     }).catch(() => {
       toast('复制失败，请手动选中链接后复制', 'error');
@@ -1113,6 +1119,29 @@
     const el = document.createElement('span');
     el.textContent = s;
     return el.innerHTML;
+  }
+
+  function escAttr(s) {
+    return esc(s).replace(/"/g, '&quot;');
+  }
+
+  function hostLabel(url) {
+    try {
+      return new URL(url).host;
+    } catch {
+      return String(url || '').replace(/^https?:\/\//, '').split('/')[0];
+    }
+  }
+
+  function backupLabel(url, idx) {
+    const host = hostLabel(url);
+    if (host.includes('dpdns.org')) return '跨域备用';
+    return `备用 ${idx + 1}`;
+  }
+
+  function nodeLabel(node, idx) {
+    const name = node.name || node.remark || (node.protocol === 'ws' ? 'CDN 节点' : '备用节点');
+    return node.server ? `${name} · ${node.server}` : `${name} #${idx + 1}`;
   }
 
   // QR code generator using QRious library
