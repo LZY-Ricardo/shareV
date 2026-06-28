@@ -1357,23 +1357,22 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 2px;
-  padding-top: 8px;
+  margin-top: -2px;
   border-top: 1px dashed var(--border);
+  padding-top: 8px;
 }
 
 .config-backup-chip {
-  min-width: 150px;
-  flex: 1 1 0;
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.5);
+  gap: 6px;
+  padding: 6px 9px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.32);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 999px;
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
@@ -1381,7 +1380,7 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 
 .config-backup-chip span {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -1391,7 +1390,7 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-dim);
 }
 

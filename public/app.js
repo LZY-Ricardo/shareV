@@ -563,7 +563,7 @@
             ${data.backupClashConfigUrls.map((url, idx) => `
               <button class="config-backup-chip" id="backupClashConfigUrl${idx}" data-url="${escAttr(url)}" onclick="copyBackupConfig('backupClashConfigUrl', ${idx})">
                 <span>${esc(backupLabel(url, idx))}</span>
-                <small>${esc(hostLabel(url))}</small>
+                <small>复制链接</small>
               </button>
             `).join('')}
           </div>`;
@@ -617,7 +617,7 @@
             ${data.backupV2raynConfigUrls.map((url, idx) => `
               <button class="config-backup-chip" id="backupV2raynConfigUrl${idx}" data-url="${escAttr(url)}" onclick="copyBackupConfig('backupV2raynConfigUrl', ${idx})">
                 <span>${esc(backupLabel(url, idx))}</span>
-                <small>${esc(hostLabel(url))}</small>
+                <small>复制链接</small>
               </button>
             `).join('')}
           </div>` : ''}
@@ -1125,23 +1125,14 @@
     return esc(s).replace(/"/g, '&quot;');
   }
 
-  function hostLabel(url) {
-    try {
-      return new URL(url).host;
-    } catch {
-      return String(url || '').replace(/^https?:\/\//, '').split('/')[0];
-    }
-  }
-
-  function backupLabel(url, idx) {
-    const host = hostLabel(url);
-    if (host.includes('dpdns.org')) return '跨域备用';
+  function backupLabel(_, idx) {
+    if (idx === 1) return '备用 2';
     return `备用 ${idx + 1}`;
   }
 
   function nodeLabel(node, idx) {
     const name = node.name || node.remark || (node.protocol === 'ws' ? 'CDN 节点' : '备用节点');
-    return node.server ? `${name} · ${node.server}` : `${name} #${idx + 1}`;
+    return name || `节点 ${idx + 1}`;
   }
 
   // QR code generator using QRious library
