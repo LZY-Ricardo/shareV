@@ -704,12 +704,12 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 .qr-container {
   display: flex;
   justify-content: center;
-  padding: 8px 0 4px;
+  padding: 6px 0 2px;
 }
 
 .qr-container .qr-img {
-  width: 140px;
-  height: 140px;
+  width: 124px;
+  height: 124px;
   border-radius: var(--radius-sm);
 }
 
@@ -991,9 +991,9 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 .config-node-row {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-bottom: 2px;
+  justify-content: flex-start;
+  gap: 6px;
+  margin: -1px 0 0;
 }
 
 .config-node-label {
@@ -1003,11 +1003,12 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 }
 
 .config-node-select {
-  width: min(100%, 300px);
-  min-width: 220px;
-  padding: 6px 30px 6px 10px;
+  width: auto;
+  min-width: 118px;
+  max-width: 148px;
+  padding: 4px 24px 4px 9px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--primary);
   background: rgba(108, 92, 231, 0.08);
@@ -1027,14 +1028,15 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 .config-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 7px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .config-link {
   width: 100%;
-  padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.03);
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, 0.42);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   color: var(--primary);
@@ -1045,7 +1047,8 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 }
 
 .config-copy-btn {
-  padding: 6px 18px;
+  min-height: 32px;
+  padding: 6px 13px;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--primary);
@@ -1062,7 +1065,8 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 }
 
 .config-import-btn {
-  padding: 6px 18px;
+  min-height: 32px;
+  padding: 6px 13px;
   font-family: var(--mono);
   font-size: 11px;
   color: #fff;
@@ -1085,7 +1089,8 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 }
 
 .config-clash-btn {
-  padding: 6px 18px;
+  min-height: 32px;
+  padding: 6px 13px;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--success);
@@ -1102,7 +1107,8 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 }
 
 .config-clash-import-btn {
-  padding: 6px 18px;
+  min-height: 32px;
+  padding: 6px 16px;
   font-family: var(--mono);
   font-size: 11px;
   color: #fff;
@@ -1126,12 +1132,13 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 
 .config-help-btn,
 .guide-copy-btn {
-  padding: 6px 18px;
+  min-height: 32px;
+  padding: 6px 10px;
   font-family: var(--mono);
-  font-size: 11px;
-  color: var(--accent);
-  background: var(--accent-dim);
-  border: 1px solid rgba(225, 112, 85, 0.2);
+  font-size: 10px;
+  color: var(--text-light);
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
@@ -1139,14 +1146,15 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 
 .config-help-btn:hover,
 .guide-copy-btn:hover {
-  background: rgba(225, 112, 85, 0.15);
-  box-shadow: 0 2px 12px var(--accent-dim);
+  color: var(--accent);
+  background: rgba(225, 112, 85, 0.08);
+  box-shadow: none;
 }
 
 .config-action-with-help {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .config-help-tip {
@@ -1271,13 +1279,13 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 }
 
 .config-tip {
-  font-size: 11px;
-  line-height: 1.6;
+  font-size: 10px;
+  line-height: 1.5;
   color: #9a7b3c;
-  background: var(--warning-dim);
+  background: rgba(253, 203, 110, 0.1);
   border: 1px solid rgba(253, 203, 110, 0.3);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 7px 9px;
 }
 
 .config-hint {
@@ -1287,9 +1295,9 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 }
 
 .config-batch-tip {
-  margin-top: 8px;
-  padding: 8px 10px;
-  font-size: 11px;
+  margin-top: 6px;
+  padding: 7px 9px;
+  font-size: 10px;
   line-height: 1.5;
   color: var(--text-light);
   background: var(--card-bg);
@@ -1304,10 +1312,10 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 }
 
 .config-sub-box {
-  margin-top: 12px;
-  padding: 10px 12px;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
+  margin-top: 8px;
+  padding: 9px 10px;
+  background: rgba(255, 255, 255, 0.28);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
 }
 
@@ -1355,27 +1363,26 @@ canvas#chart { width: 100%; height: 100%; display: block; }
 
 .config-backup-strip {
   display: flex;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 5px;
   flex-wrap: wrap;
-  margin-top: -2px;
-  border-top: 1px dashed var(--border);
-  padding-top: 8px;
+  margin-top: -1px;
 }
 
 .config-backup-chip {
   flex: 0 1 auto;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 6px 9px;
+  justify-content: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 4px 8px;
   color: var(--text-dim);
-  background: rgba(255, 255, 255, 0.32);
-  border: 1px solid var(--border-subtle);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.2s;
-  text-align: left;
 }
 
 .config-backup-chip span {
@@ -1391,14 +1398,13 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   white-space: nowrap;
   font-family: var(--mono);
   font-size: 9px;
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
 .config-backup-chip:hover {
   color: var(--primary);
   background: rgba(108, 92, 231, 0.08);
   border-color: rgba(108, 92, 231, 0.18);
-  transform: translateY(-1px);
 }
 
 .config-backup-list {
@@ -1937,11 +1943,15 @@ canvas#chart { width: 100%; height: 100%; display: block; }
   .config-actions > button,
   .config-action-with-help { flex: 1 1 auto; }
   .config-action-with-help .config-import-btn { flex: 1 1 auto; }
+  .config-actions .config-help-btn {
+    flex: 1 0 100%;
+    min-height: 30px;
+  }
   .config-sub-row { flex-direction: column; }
   .config-sub-row .config-copy-btn { width: 100%; }
-  .config-node-row { align-items: stretch; }
-  .config-node-select { width: 100%; min-width: 0; }
-  .config-backup-chip { flex-basis: 100%; }
+  .config-node-row { justify-content: flex-start; }
+  .config-node-select { max-width: 100%; }
+  .config-backup-chip { flex-basis: auto; }
   .config-help-tip::after { max-width: min(240px, calc(100vw - 32px)); }
 }
 
