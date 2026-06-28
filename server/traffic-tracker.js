@@ -58,6 +58,7 @@ async function snapshot() {
     const rows = [];
 
     for (const inbound of inbounds) {
+      if (!isInboundEnabled(inbound)) continue;
       if (!inbound.clientStats) continue;
       for (const client of inbound.clientStats) {
         if (!client.email) continue;
@@ -135,6 +136,10 @@ function expandCdnNodeFields(f, cfg = config) {
   }));
 }
 
+function isInboundEnabled(inbound) {
+  return inbound?.enable !== false && inbound?.enable !== 0;
+}
+
 async function getUserStats(email, { displayName } = {}) {
   const now = Math.floor(Date.now() / 1000);
 
@@ -145,6 +150,7 @@ async function getUserStats(email, { displayName } = {}) {
   try {
     const inbounds = await xui.getInbounds();
     for (const inbound of inbounds) {
+      if (!isInboundEnabled(inbound)) continue;
       // 1. Try live clientStats first — 3x-ui populates this for clients that
       //    have generated traffic on this inbound.
       let client = null;
@@ -542,6 +548,7 @@ async function getLiveCounters(email) {
   try {
     const inbounds = await xui.getInbounds();
     for (const inbound of inbounds) {
+      if (!isInboundEnabled(inbound)) continue;
       if (!inbound.clientStats) continue;
       const client = inbound.clientStats.find(c => c.email === email);
       if (client) {
@@ -608,6 +615,7 @@ async function getTrafficRanking(entries, period = 'day') {
   try {
     const inbounds = await xui.getInbounds();
     for (const inbound of inbounds) {
+      if (!isInboundEnabled(inbound)) continue;
       for (const client of inbound.clientStats || []) {
         if (client.email) liveByEmail.set(client.email, client);
       }

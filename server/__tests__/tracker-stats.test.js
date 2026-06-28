@@ -126,7 +126,7 @@ describe('traffic tracker stats', () => {
       protocol: 'vless',
       port: 443,
       settings: JSON.stringify({
-        clients: [{ email: 'Hua', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+        clients: [{ email: 'hua.com', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
       }),
       streamSettings: JSON.stringify({
         realitySettings: {
@@ -139,7 +139,7 @@ describe('traffic tracker stats', () => {
         },
       }),
     };
-    const client = { email: 'Hua' };
+    const client = { email: 'hua.com' };
 
     const profile = tracker.buildClashConfig(inbound, client, { server: 'v.sunandyu.top' });
 
@@ -178,13 +178,13 @@ describe('traffic tracker stats', () => {
 
   it('filters direct REALITY nodes out of subscription exports', () => {
     const tracker = loadTracker({ inbounds: [] });
-    const client = { email: 'Hua' };
+    const client = { email: 'hua.com' };
     const wsInbound = {
       id: 1,
       protocol: 'vless',
       port: 443,
       settings: JSON.stringify({
-        clients: [{ email: 'Hua', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+        clients: [{ email: 'hua.com', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
       }),
       streamSettings: JSON.stringify({
         network: 'ws',
@@ -197,7 +197,7 @@ describe('traffic tracker stats', () => {
       protocol: 'vless',
       port: 443,
       settings: JSON.stringify({
-        clients: [{ email: 'Hua', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+        clients: [{ email: 'hua.com', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
       }),
       streamSettings: JSON.stringify({
         realitySettings: {
@@ -219,13 +219,13 @@ describe('traffic tracker stats', () => {
 
   it('expands one CF inbound across configured CDN node domains', () => {
     const tracker = loadTracker({ inbounds: [] });
-    const client = { email: 'Hua' };
+    const client = { email: 'hua.com' };
     const inbound = {
       id: 1,
       protocol: 'vless',
       port: 2083,
       settings: JSON.stringify({
-        clients: [{ email: 'Hua', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+        clients: [{ email: 'hua.com', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
       }),
       streamSettings: JSON.stringify({
         network: 'ws',
@@ -258,6 +258,50 @@ describe('traffic tracker stats', () => {
     assert.match(profile, /server: "sub\.ricardo777\.dpdns\.org"/);
     assert.match(profile, /servername: "sub\.ricardo777\.dpdns\.org"/);
     assert.match(profile, /Host: "sub\.ricardo777\.dpdns\.org"/);
+  });
+
+  it('ignores disabled direct inbounds when choosing live traffic source', async () => {
+    const tracker = loadTracker({
+      inbounds: [
+        {
+          id: 1,
+          enable: false,
+          protocol: 'vless',
+          port: 443,
+          settings: JSON.stringify({
+            clients: [{ email: 'hua.com', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+          }),
+          streamSettings: JSON.stringify({
+            realitySettings: {
+              serverNames: ['www.microsoft.com'],
+              shortIds: ['abcd'],
+              settings: { publicKey: 'pub-key', fingerprint: 'chrome' },
+            },
+          }),
+          clientStats: [{ email: 'hua.com', up: 100, down: 900, allTime: 1000, enable: true }],
+        },
+        {
+          id: 3,
+          enable: true,
+          protocol: 'vless',
+          port: 2083,
+          settings: JSON.stringify({
+            clients: [{ email: 'hua.com', id: 'eeaf6b42-51bc-4a0d-a776-2d21f80a2ee3' }],
+          }),
+          streamSettings: JSON.stringify({
+            network: 'ws',
+            tlsSettings: { serverName: 'v.sunandyu.top' },
+            wsSettings: { path: '/vlws', host: '' },
+          }),
+          clientStats: [],
+        },
+      ],
+    });
+
+    const stats = await tracker.getUserStats('hua.com', { displayName: 'Hua' });
+
+    assert.deepEqual(stats.total, { up: 0, down: 0 });
+    assert.equal(stats.node.port, 2083);
   });
 
   it('ranks users by day, month, and total traffic', async () => {
