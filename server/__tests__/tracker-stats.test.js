@@ -32,6 +32,10 @@ function loadTracker({ inbounds, latestSnapshot = null, getInboundsError = null,
       if (start === 200) return { up: 500, down: 500 };
       return { up: 0, down: 0 };
     },
+    getPeriodTrafficBetween: (email, start, end) => {
+      if (start === 0 && end === 200) return { up: 300, down: 700 };
+      return { up: 0, down: 0 };
+    },
     getDailyTraffic: () => [],
     getTodayStart: () => 100,
     getMonthStart: () => 200,
@@ -65,6 +69,24 @@ describe('traffic tracker stats', () => {
     const stats = await tracker.getUserStats('user1');
 
     assert.deepEqual(stats.total, { up: 100, down: 200 });
+  });
+
+  it('uses the completed previous calendar month for monthly reports', async () => {
+    const tracker = loadTracker({
+      inbounds: [{
+        protocol: 'tcp',
+        port: 443,
+        remark: 'node',
+        settings: '{}',
+        clientStats: [{ email: 'user1', up: 100, down: 200, allTime: 0, total: 0, enable: true }],
+      }],
+    });
+
+    const stats = await tracker.getUserStats('user1');
+
+    assert.deepEqual(stats.thisMonth, { up: 500, down: 500 });
+    assert.deepEqual(stats.lastMonth, { up: 300, down: 700 });
+    assert.deepEqual(stats.monthlyReport.traffic, { up: 300, down: 700 });
   });
 
   it('falls back to the latest snapshot total when live data is unavailable', async () => {

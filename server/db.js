@@ -184,6 +184,25 @@ function createDB(dbPath) {
     return trafficDelta(before, latest);
   }
 
+  // Calculate traffic for a bounded period [startTimestamp, endTimestamp]
+  function getPeriodTrafficBetween(email, startTimestamp, endTimestamp) {
+    if (!endTimestamp || endTimestamp <= startTimestamp) return { up: 0, down: 0 };
+
+    const before = getSnapshotAtOrBefore(email, startTimestamp);
+    const atEnd = getSnapshotAtOrBefore(email, endTimestamp);
+
+    if (!atEnd) return { up: 0, down: 0 };
+    if (!before) {
+      const earliest = getSnapshotAtOrAfter(email, startTimestamp);
+      if (earliest && earliest.timestamp < atEnd.timestamp) {
+        return trafficDelta(earliest, atEnd);
+      }
+      return { up: 0, down: 0 };
+    }
+
+    return trafficDelta(before, atEnd);
+  }
+
   // Get today's start timestamp (local timezone midnight)
   function getTodayStart() {
     const now = new Date();
@@ -207,10 +226,9 @@ function createDB(dbPath) {
   // Get last month's start timestamp (1st day of previous month, midnight)
   function getLastMonthStart() {
     const now = new Date();
-    now.setMonth(now.getMonth() - 1);
-    now.setDate(1);
-    now.setHours(0, 0, 0, 0);
-    return Math.floor(now.getTime() / 1000);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    lastMonthStart.setHours(0, 0, 0, 0);
+    return Math.floor(lastMonthStart.getTime() / 1000);
   }
 
   // Clean up old snapshots (keep last 90 days)
@@ -288,6 +306,7 @@ function createDB(dbPath) {
     getLatestSnapshot,
     getDailyTraffic,
     getPeriodTraffic,
+    getPeriodTrafficBetween,
     getTodayStart,
     hasSnapshotsSince,
     getMonthStart,

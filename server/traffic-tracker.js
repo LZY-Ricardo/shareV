@@ -291,8 +291,12 @@ async function getUserStats(email, { displayName } = {}) {
   }
 
   const todayTraffic = db.getPeriodTraffic(email, db.getTodayStart());
-  const thisMonthTraffic = db.getPeriodTraffic(email, db.getMonthStart());
-  const lastMonthTraffic = db.getPeriodTraffic(email, db.getLastMonthStart());
+  const monthStart = db.getMonthStart();
+  const lastMonthStart = db.getLastMonthStart();
+  const thisMonthTraffic = db.getPeriodTraffic(email, monthStart);
+  const lastMonthTraffic = db.getPeriodTrafficBetween
+    ? db.getPeriodTrafficBetween(email, lastMonthStart, monthStart)
+    : db.getPeriodTraffic(email, lastMonthStart);
 
   // Check online status + device details
   let online = false;
@@ -328,12 +332,21 @@ async function getUserStats(email, { displayName } = {}) {
 
   const avgSpeed = db.getRecentSpeed(email);
 
+  const nowDate = new Date();
+  const reportDate = new Date(nowDate.getFullYear(), nowDate.getMonth() - 1, 1);
+  const monthlyReport = {
+    year: reportDate.getFullYear(),
+    month: reportDate.getMonth() + 1,
+    traffic: lastMonthTraffic,
+  };
+
   return {
     today: todayTraffic,
     month: resolveMonthTraffic(liveClient, email),
     total: { up: totalUp, down: totalDown },
     thisMonth: thisMonthTraffic,
     lastMonth: lastMonthTraffic,
+    monthlyReport,
     online,
     devices: deviceList.length,
     deviceList,

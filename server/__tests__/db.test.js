@@ -144,6 +144,18 @@ describe('db', () => {
     });
   });
 
+  describe('getPeriodTrafficBetween', () => {
+    it('calculates only the bounded period and excludes later snapshots', () => {
+      db.insertSnapshot('user1', 100, 200, 1_000, 2_000, 500);
+      db.insertSnapshot('user1', 200, 400, 1_500, 3_500, 1_500);
+      db.insertSnapshot('user1', 300, 600, 2_000, 5_000, 2_500);
+
+      const result = db.getPeriodTrafficBetween('user1', 1_000, 2_000);
+
+      assert.deepEqual(result, { up: 500, down: 1_500 });
+    });
+  });
+
   describe('insertSnapshots (batch)', () => {
     it('inserts multiple rows in a transaction', () => {
       db.insertSnapshots([

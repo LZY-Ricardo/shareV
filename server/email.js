@@ -159,18 +159,27 @@ function alertBanner(text, type) {
 
 // ── Monthly report email ──
 
+function getMonthlyReportInfo(stats) {
+  const report = stats.monthlyReport || {};
+  const nowDate = new Date();
+  const reportDate = new Date(nowDate.getFullYear(), nowDate.getMonth() - 1, 1);
+  const year = report.year || reportDate.getFullYear();
+  const month = report.month || reportDate.getMonth() + 1;
+  const traffic = report.traffic || stats.lastMonth || stats.thisMonth || { up: 0, down: 0 };
+  return { year, month, traffic };
+}
+
 function buildMonthlyHtml(user, stats, publicUrl) {
-  const now = new Date();
-  // Calendar month billing cycle (1st of each month)
-  const periodLabel = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月`;
+  const report = getMonthlyReportInfo(stats);
+  const periodLabel = `${report.year} 年 ${report.month} 月`;
 
   const node = stats.node || {};
   const hasQuota = node.totalGB && node.totalGB > 0;
   const quotaBytes = hasQuota ? node.totalGB * 1024 ** 3 : 0;
 
-  // Use billing period traffic for quota display (matches 100GB/month limit)
-  const monthUp = stats.thisMonth ? stats.thisMonth.up : 0;
-  const monthDown = stats.thisMonth ? stats.thisMonth.down : 0;
+  // Use the completed report period for quota display in monthly reports.
+  const monthUp = report.traffic.up || 0;
+  const monthDown = report.traffic.down || 0;
   const monthTotal = monthUp + monthDown;
   const usedPct = hasQuota ? (monthTotal / quotaBytes) * 100 : 0;
 
@@ -203,8 +212,8 @@ function buildMonthlyHtml(user, stats, publicUrl) {
     p.push(sectionEnd);
   }
 
-  // Monthly traffic
-  p.push(sectionStart('本月流量'));
+  // Report period traffic
+  p.push(sectionStart('报告期流量'));
   p.push(statGrid([
     { value: formatBytes(monthUp), label: '↑ 上传' },
     { value: formatBytes(monthDown), label: '↓ 下载' },
@@ -236,7 +245,7 @@ function buildMonthlyHtml(user, stats, publicUrl) {
   p.push(sectionStart('账号信息'));
   const rows = [];
   if (node.remark) rows.push(detailRow('节点', escHtml(node.remark), false));
-  rows.push(detailRow('本月用量', formatBytes(monthTotal), false));
+  rows.push(detailRow('报告期用量', formatBytes(monthTotal), false));
   rows.push(detailRow('累计总量', formatBytes(totalBytes), false));
   if (node.expiryTime && node.expiryTime > 0) {
     const daysLeft = Math.max(0, Math.ceil((node.expiryTime - Date.now()) / (1000 * 60 * 60 * 24)));
@@ -449,8 +458,8 @@ async function sendEmail(to, subject, html) {
 
 async function sendMonthlyReport(user, stats, publicUrl) {
   if (!user.email) return null;
-  const now = new Date();
-  const subject = `shareV · ${now.getFullYear()} 年 ${now.getMonth() + 1} 月流量报告`;
+  const report = getMonthlyReportInfo(stats);
+  const subject = `shareV · ${report.year} 年 ${report.month} 月流量报告`;
   const html = buildMonthlyHtml(user, stats, publicUrl);
   return sendEmail(user.email, subject, html);
 }
@@ -483,4 +492,8 @@ module.exports = {
   sendQuotaWarning,
   sendTestEmail,
   sendCfCdnAnnouncement,
+  _test: {
+    buildMonthlyHtml,
+    getMonthlyReportInfo,
+  },
 };
